@@ -22,8 +22,10 @@ to each allocator (when applicable).
 
 /* Enum definitions below. */
 
-/* The enum types for the different ILOC operations that can be found in a test block. */
-enum OP_TYPE {
+/* The enum types for the different ILOC operations that can be found in a test block. 
+These will be used in the support function that provides the operation type
+and register ID's (when applicable).*/
+typedef enum OP_TYPE_ENUM {
 	LOADI = 0,
 	LOADAI = 1,
 	LOAD = 2,
@@ -34,8 +36,9 @@ enum OP_TYPE {
 	MULT = 7,
 	LSHIFT = 8,
 	RSHIFT = 9,
-	OUTPUT = 10
-};
+	OUTPUT = 10,
+	DEFAULT = 11
+} OP_TYPE;
 
 /* The enum types that tell us whether a virtual register is currently spilled in memory,
 or in a physical register. */
@@ -45,6 +48,10 @@ enum REG_STATUS {
 };
 
 /* End enum definitions. */
+
+/* General support functions included below. */
+
+
 
 
 

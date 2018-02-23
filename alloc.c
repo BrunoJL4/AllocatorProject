@@ -56,12 +56,14 @@ int main(int argc, char *argv[]) {
 
 	// Getting started: let's go through the file and print every line that isn't
 	// a blank space, or that isn't a comment. Go until EOF.
-	ssize_t read;
+	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
+	/*
 	while(read = getline(&currLine, &len, file) != -1) {
 		// If a line is blank (length 1) or starts with a slash,
-		// ignore it.
+		// ignore it. Blank lines are "length 1" for the purposes
+		// of well-formed test cases.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
 			printf("Retrieved line of size: %d\n", strlen(currLine));
 			printf("%s", currLine);
@@ -71,7 +73,95 @@ int main(int argc, char *argv[]) {
 		free(currLine);
 		currLine = NULL;
 	}
+	currLine = NULL;
+	read = 0;
 	rewind(file);
+	*/
+	// Let's go to each non-blank line and obtain the type of the operation, plus
+	// the (up to three) registers involved. Registers will be obtained in order
+	// of appearance, and a register can appear more than once in an operation;
+	while(read = getline(&currLine, &len, file) != -1) {
+		// Ignore a blank line or a comment.
+		if(strlen(currLine) != 1 && currLine[0] != '/') {
+			// First, find the index of the initial non-blank character.
+			uint currIndex = 0;
+			uint firstIndex = 0;
+			char currChar = currLine[currIndex];
+			while(isblank(currChar)) {
+				currIndex += 1;
+				currChar = currLine[currIndex];
+			}
+			firstIndex = currIndex;
+			// Now find the index of the first blank character following it.
+			uint lastIndex = currIndex;
+			while(!isblank(currChar)) {
+				currIndex += 1;
+				currChar = currLine[currIndex];
+			}
+			lastIndex = currIndex - 1;
+			// The length of the actual operation string will be 1 more than the
+			// difference between the two indexes. Copy the operation string
+			// over to a null-terminated stack buffer, to prepare for comparison.
+			uint opLength = lastIndex - firstIndex + 1;
+			char opString[opLength + 1];
+			opString[opLength] = '\0';
+			strncpy(opString, &(currLine[firstIndex]), opLength);
+			// Can now set the enum for the current operation type.
+			OP_TYPE op = DEFAULT;
+			// Using strcmp() because for "store" vs "storeAI" instructions,
+			// "store" will lose. strncmp() would stop at the end of the shorter string
+			// and consider them equal.
+			if(strcmp(opString, "loadI") == 0) {
+				printf("loadI operation.\n");
+				op = LOADI;
+			}
+			else if(strcmp(opString, "loadAI") == 0) {
+				printf("loadAI operation.\n");
+				op = LOADAI;
+			}
+			else if(strcmp(opString, "load") == 0) {
+				printf("load operation.\n");
+				op = LOAD;
+			}
+			else if(strcmp(opString, "store") == 0) {
+				printf("store operation.\n");
+				op = STORE;
+			}
+			else if(strcmp(opString, "storeAI") == 0) {
+				printf("storeAI operation.\n");
+				op = STOREAI;
+			}
+			else if(strcmp(opString, "add") == 0) {
+				printf("add operation.\n");
+				op = ADD;
+			}
+			else if(strcmp(opString, "sub") == 0) {
+				printf("sub operation.\n");
+				op = SUB;
+			}
+			else if(strcmp(opString, "mult") == 0) {
+				printf("mult operation. \n");
+				op = MULT;
+			}
+			else if(strcmp(opString, "lshift") == 0) {
+				printf("lshift operation.\n");
+				op = LSHIFT;
+			}
+			else if(strcmp(opString, "rshift") == 0) {
+				printf("rshift operation.\n");
+				op = RSHIFT;
+			}
+			else if(strcmp(opString, "output") == 0) {
+				printf("output operation.\n");
+				op = OUTPUT;
+			}
+			else{
+				printf("ERROR! No valid operation provided.\n");
+				exit(EXIT_FAILURE);
+			}
+			
+		}
+	}
 
 	return 1;
 
