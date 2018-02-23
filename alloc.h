@@ -112,6 +112,30 @@ input/output parameters be lumped together without some spaces/non-numeric symbo
 */
 int nextNum(char *line, int *currIndexPtr);
 
+/* This function takes a file pointer, and returns a linked list of regNodes. The regNodes
+have their occurrence lists populated according to the ILOC instructions in the file.
+This essentially gathers all of the information we need for top-down and bottom-up allocation
+before scrolling down a set of instructions:
+
+a) Top-down allocation needs the list of occurrences for live ranges, number of
+occurrences, and MAXLIVE measurements.
+
+b) Bottom-up allocation needs the list of occurrences for the deterimination of the next
+occurrence of a given register, from a given instruction.
+
+*/
+regNode genRegList(FILE *file);
+
+/* This function adds a regNode to a linked list, if it doesn't already exist. */
+void addReg(uint id, regNode head);
+
+/* This function adds an intNode to a regNode's linked list, if it's not already present
+(and if the occurrence exists). This marks a new occurrence of the virtual register in the ILOC
+instructions.
+
+Attempts will regularly be made to add duplicate occurrences, as registers will often
+appear in the same line.*/
+void addOcc(int occ, uint id, regNode);
 
 
 
