@@ -51,6 +51,17 @@ enum REG_STATUS {
 
 /* General support functions included below. */
 
+/* This function takes an input string and a pointer to an index. It moves from that current
+index to the next numeric value, and returns that value. The function also returns the index
+following the end of the next numeric value, which could be a nextline. 
+
+NOTE: Function assumes that currIndexPtr stores an index such that it immediately follows either
+a register number or a constant in an ILOC instruction. In no properly-formed ILOC code will two
+input/output parameters be lumped together without some spaces/non-numeric symbols.
+
+*/
+int nextNum(char *line, int *currIndexPtr);
+
 
 
 

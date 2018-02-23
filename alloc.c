@@ -8,6 +8,33 @@
 
 /* General support functions defined here. */
 
+int nextNum(char *line, int *currIndexPtr) {
+	// index value passed in from the pointer.
+	int currIndex = *currIndexPtr;
+	// value we'll use to store the return value.
+	int ret = -1;
+	// set currIndex to the first numeric value.
+	while(line[currIndex] < '0' || line[currIndex] > '9') {
+		currIndex += 1;
+	}
+	// set lastIndex to currIndex, and then move it to the first non-numeric value.
+	int lastIndex = currIndex;
+	while(line[lastIndex] >= '0' && line[lastIndex] <= '9') {
+		lastIndex += 1;	
+	}
+	// obtain the length of the constant.
+	int length = lastIndex - currIndex;
+	// copy the constant to a null-terminated string.
+	char constStr[length + 1];
+	constStr[length] = '\0';
+	strncpy(constStr, &(line[currIndex]), length);
+	// obtain the value of the constant.
+	ret = strtol(constStr, NULL, 10);
+	// update the index stored at the pointer, and return.
+	*currIndexPtr = lastIndex;
+	return ret;
+}
+
 /* Top-down allocation (simple) support functions defined here. */
 
 /* Top-down allocation (lecture) support functions defined here. */
@@ -59,24 +86,6 @@ int main(int argc, char *argv[]) {
 	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
-	/*
-	while(read = getline(&currLine, &len, file) != -1) {
-		// If a line is blank (length 1) or starts with a slash,
-		// ignore it. Blank lines are "length 1" for the purposes
-		// of well-formed test cases.
-		if(strlen(currLine) != 1 && currLine[0] != '/') {
-			printf("Retrieved line of size: %d\n", strlen(currLine));
-			printf("%s", currLine);
-			printf("currLine[1] is: %c\n", currLine[1]);
-		}
-		// free the current line's memory, and set the pointer to null
-		free(currLine);
-		currLine = NULL;
-	}
-	currLine = NULL;
-	read = 0;
-	rewind(file);
-	*/
 	// Let's go to each non-blank line and obtain the type of the operation, plus
 	// the (up to three) registers involved. Registers will be obtained in order
 	// of appearance, and a register can appear more than once in an operation;
@@ -98,70 +107,138 @@ int main(int argc, char *argv[]) {
 				currIndex += 1;
 				currChar = currLine[currIndex];
 			}
-			lastIndex = currIndex - 1;
+			lastIndex = currIndex;
 			// The length of the actual operation string will be 1 more than the
 			// difference between the two indexes. Copy the operation string
 			// over to a null-terminated stack buffer, to prepare for comparison.
-			uint opLength = lastIndex - firstIndex + 1;
+			uint opLength = lastIndex - firstIndex;
 			char opString[opLength + 1];
 			opString[opLength] = '\0';
 			strncpy(opString, &(currLine[firstIndex]), opLength);
 			// Can now set the enum for the current operation type.
 			OP_TYPE op = DEFAULT;
-			// Using strcmp() because for "store" vs "storeAI" instructions,
-			// "store" will lose. strncmp() would stop at the end of the shorter string
-			// and consider them equal.
+			// Any operation may have up to 3 registers involved (duplicates allowed),
+			// and one constant value. 
+			int opReg1 = -1;
+			int opReg2 = -1;
+			int opReg3 = -1;
+			int opConst = -1;
 			if(strcmp(opString, "loadI") == 0) {
 				printf("loadI operation.\n");
 				op = LOADI;
+				// next value would be a constant.
+				opConst = nextNum(currLine, &currIndex);
+				// following that, a register.
+				opReg1 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "loadAI") == 0) {
 				printf("loadAI operation.\n");
 				op = LOADAI;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, a constant.
+				opConst = nextNum(currLine, &currIndex);
+				// finally, another register.
+				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "load") == 0) {
 				printf("load operation.\n");
 				op = LOAD;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "store") == 0) {
 				printf("store operation.\n");
 				op = STORE;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "storeAI") == 0) {
 				printf("storeAI operation.\n");
 				op = STOREAI;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, a constant.
+				opConst = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "add") == 0) {
 				printf("add operation.\n");
 				op = ADD;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, another register.
+				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "sub") == 0) {
 				printf("sub operation.\n");
 				op = SUB;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, another register. 
+				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "mult") == 0) {
 				printf("mult operation. \n");
 				op = MULT;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, another register.
+				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "lshift") == 0) {
 				printf("lshift operation.\n");
 				op = LSHIFT;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, another register.
+				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "rshift") == 0) {
 				printf("rshift operation.\n");
 				op = RSHIFT;
+				// next value would be a register.
+				opReg1 = nextNum(currLine, &currIndex);
+				// following that, another register.
+				opReg2 = nextNum(currLine, &currIndex);
+				// finally, another register.
+				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "output") == 0) {
 				printf("output operation.\n");
 				op = OUTPUT;
+				// value would be a constant.
+				opConst = nextNum(currLine, &currIndex);
 			}
 			else{
 				printf("ERROR! No valid operation provided.\n");
 				exit(EXIT_FAILURE);
 			}
-			
+			printf("enum value: %d\n", op);
+			printf("opReg1: %d\n", opReg1);
+			printf("opReg2: %d\n", opReg2);
+			printf("opReg3: %d\n", opReg3);
+			printf("opConst: %d\n", opConst);
 		}
+		// free the current line's memory, and set the pointer to null
+		free(currLine);
+		currLine = NULL;
 	}
+	rewind(file);
+	close(file);
 
 	return 1;
 
