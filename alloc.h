@@ -41,15 +41,65 @@ typedef enum OP_TYPE_ENUM {
 } OP_TYPE;
 
 /* The enum types that tell us whether a virtual register is currently spilled in memory,
-or in a physical register. */
-enum REG_STATUS {
+or in a physical register. DEFAULT if the corresponding struct was just initialized. */
+typedef enum REG_STATUS_ENUM {
 	MEM = 0,
-	PHYS = 1
-};
+	PHYS = 1,
+	NONE = 2
+} REG_STATUS;
 
 /* End enum definitions. */
 
+/* General struct definitions included below. */
+
+/* This struct functions as a barebones int node. Used in registerNode to store
+linked lists of occurrences. */
+typedef struct integerNode {
+	// the int stored in this node. default provided in constructor.
+	int val;
+	// the next intNode in the list. NULL by default.
+	struct integerNode *next;
+} *intNode;
+
+/* This struct stores information about virtual registers, given their appearances
+in original ILOC instructions and their current state in the allocator. These are
+stored in linked lists for ease of implementation. */
+typedef struct registerNode {
+	// the virtual ID of the register, as it appears in original ILOC instructions.
+	// default provided in constructor.
+	uint id;
+	// the current status of the register... if it's in memory (spilled), or in
+	// a physical register. DEFAULT by... default.
+	REG_STATUS status;
+	// the linked list of occurrences of this virtual register in the ILOC code.
+	// NULL by default.
+	intNode firstOcc;
+	// the ID of the current physical register this is stored in, if applicable.
+	// 999 by default.
+	uint physId;
+	// the current offset of this register's data from r0, if applicable.
+	// -9001 by default.
+	int offset;
+	// the next regNode in the linked list. NULL by default.
+	struct registerNode *next;
+} *regNode;
+
+
+
 /* General support functions included below. */
+
+/* Given an ID this function allocates memory for, initializes, and returns a pointer
+to a corresponding registerNode. */
+regNode createRegNode(uint id);
+
+/* Given an int value this function allocates memory for, initializes, and returns
+a pointer to a corresponding integerNode. */
+intNode createIntNode(int value);
+
+/* Frees the requested regNode, and all of its referenced intNodes. */
+void freeRegNode(regNode input);
+
+
 
 /* This function takes an input string and a pointer to an index. It moves from that current
 index to the next numeric value, and returns that value. The function also returns the index

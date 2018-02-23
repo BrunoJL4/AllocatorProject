@@ -8,6 +8,38 @@
 
 /* General support functions defined here. */
 
+intNode createIntNode(int value) {
+	intNode newNode = (intNode) malloc(sizeof(struct integerNode));
+	newNode->val = value;
+	newNode->next = NULL;
+	return newNode;
+}
+
+regNode createRegNode(uint id) {
+	regNode newNode = (regNode) malloc(sizeof(struct registerNode)); 
+	newNode->id = id;
+	newNode->status = NONE;
+	newNode->firstOcc = NULL;
+	newNode->physId = 999;
+	newNode->offset = -9001;
+	newNode->next = NULL;
+	return newNode;
+}
+
+void freeRegNode(regNode input) {
+	// first, free the list of occurrences.
+	intNode currNode = input->firstOcc;
+	intNode nextNode = currNode;
+	while(currNode != NULL) {
+		nextNode = currNode->next;
+		free(currNode);
+		currNode = nextNode;
+	}
+	// then free the current regNode.
+	free(input);
+	return;
+}
+
 int nextNum(char *line, int *currIndexPtr) {
 	// index value passed in from the pointer.
 	int currIndex = *currIndexPtr;
