@@ -89,6 +89,7 @@ void addOcc(int occ, uint id, regNode head) {
 	intNode currNode = currReg->firstOcc;
 	if(currNode == NULL) {
 		currReg->firstOcc = newNode;
+		printf("Successfully added occ %d to r%d!\n", occ, id);
 		return;
 	}
 	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
@@ -321,6 +322,29 @@ regNode genRegList(FILE *file) {
 	}
 	// Be kind: Rewind (the file pointer)!
 	rewind(file);
+	// Return firstNode
+	return firstNode;
+}
+
+void printRegList(regNode head) {
+	regNode currReg = head;
+	// iterate through each register node and print all of the contents.
+	while(currReg != NULL) {
+		printf("contents of r%d:\n", currReg->id);
+		printf("status: %d\n", currReg->status);
+		printf("occs: ");
+		intNode currOcc = currReg->firstOcc;
+		while(currOcc != NULL) {
+			printf("%d, ", currOcc->val);
+			currOcc = currOcc->next;
+		}
+		printf("\n");
+		printf("physical ID (if applicable): %d\n", currReg->physId);
+		printf("offset in memory (if applicable): %d\n", currReg->offset);
+		printf("next address: %x\n", currReg->next);
+		currReg = currReg->next;
+	}
+	return;
 }
 
 /* Top-down allocation (simple) support functions defined here. */
@@ -371,7 +395,10 @@ int main(int argc, char *argv[]) {
 
 	// First step: populate a linked list of regNodes with corresponding intNodes
 	// and information, using the file as input.
-	regNode firstNode = genRegList(file);
+	regNode head = genRegList(file);
+	// Debugging: test to see if the list was populated properly.
+	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+	printRegList(head);
 	
 	close(file);
 
@@ -395,6 +422,8 @@ int main(int argc, char *argv[]) {
 	// Let's go to each non-blank line and obtain the type of the operation, plus
 	// the (up to three) registers involved. Registers will be obtained in order
 	// of appearance, and a register can appear more than once in an operation;
+	// Current valid instruction in ILOC.
+	int currInstr = 0;
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
@@ -533,15 +562,19 @@ int main(int argc, char *argv[]) {
 				printf("ERROR! No valid operation provided.\n");
 				exit(EXIT_FAILURE);
 			}
+			printf("current instruction: %d\n", currInstr);
 			printf("enum value: %d\n", op);
 			printf("opReg1: %d\n", opReg1);
 			printf("opReg2: %d\n", opReg2);
 			printf("opReg3: %d\n", opReg3);
 			printf("opConst: %d\n", opConst);
+			// increment the current instruction
+			currInstr += 1;
 		}
 		// free the current line's memory, and set the pointer to null
 		free(currLine);
 		currLine = NULL;
 	}
+	// Be kind: Rewind (the file pointer)!
 	rewind(file);
 	*/

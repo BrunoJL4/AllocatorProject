@@ -99,8 +99,6 @@ intNode createIntNode(int value);
 /* Frees the requested regNode, and all of its referenced intNodes. */
 void freeRegNode(regNode input);
 
-
-
 /* This function takes an input string and a pointer to an index. It moves from that current
 index to the next numeric value, and returns that value. The function also returns the index
 following the end of the next numeric value, which could be a nextline. 
@@ -136,6 +134,10 @@ instructions.
 Attempts will regularly be made to add duplicate occurrences, as registers will often
 appear in the same line.*/
 void addOcc(int occ, uint id, regNode);
+
+/* Debugging function. Runs through a list of regNodes and prints their contents,
+including the occurrences present in each. */
+void printRegList(regNode head);
 
 
 
