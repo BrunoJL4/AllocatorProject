@@ -167,8 +167,6 @@ of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the 
 int descComp(regNode n1, regNode n2);
 
 
-
-
 /* Simple top-down exclusive functions below. */
 
 /* Performs top-down allocation given the number of registers from the user, and the

@@ -28,13 +28,7 @@ regNode createRegNode(uint id) {
 
 void freeRegNode(regNode input) {
 	// first, free the list of occurrences.
-	intNode currNode = input->firstOcc;
-	intNode nextNode = currNode;
-	while(currNode != NULL) {
-		nextNode = currNode->next;
-		free(currNode);
-		currNode = nextNode;
-	}
+	freeIntNode(input->firstOcc);
 	// then free the current regNode.
 	free(input);
 	return;
@@ -350,6 +344,106 @@ void printRegList(regNode head) {
 	return;
 }
 
+int intNodeExists(int target, intNode head) {
+	intNode currNode = head;
+	while(currNode != NULL) {
+		if(currNode->val == target) {
+			return 1;
+		}
+		currNode = currNode->next;
+	}
+	return -1;
+}
+
+void freeIntNode(intNode head) {
+	if(head == NULL) {
+		return;
+	}
+	intNode currNode = head;
+	while(currNode != NULL) {
+		intNode nextNode = currNode->next;
+		free(currNode);
+		currNode = nextNode;
+	}
+	return;
+}
+
+regNode getRegNode(uint id, regNode head) {
+	regNode currNode = head;
+	while(currNode != NULL) {
+		if(currNode->id == id) {
+			return currNode;
+		}
+		currNode = currNode->next;
+	}
+	return NULL;
+}
+
+void spillReg(uint targetId, uint feasId, regNode head) {
+	// obtain the regNode instance we want to spill/modify
+	regNode targetNode = getRegNode(targetId, head);
+	if(targetNode == NULL) {
+		printf("Error in spillReg! Target %d doesn't exist!\n", targetId);
+		exit(EXIT_FAILURE);
+	}
+	// obtain its offset
+	int offset = targetNode->offset;
+	// print the spill operation to standard output
+	fprintf(stdout, "storeAI r%d => r0, %d\n", feasId, offset);
+	// modify the target node's status to in memory
+	targetNode->status = MEM;
+	// modify the target node's physId to 999 (default)
+	targetNode->physId = 999;
+	return;
+}
+
+void fetchReg(uint targetId, uint feasId, regNode head) {
+	// obtain the regNode instance we want to fetch/modify
+	regNode targetNode = getRegNode(targetId, head);
+	if(targetNode == NULL) {
+		printf("Error in fetchReg! Target %d doesn't exist!\n", targetId);
+		exit(EXIT_FAILURE);
+	}
+	// obtain its offset
+	int offset = targetNode->offset;
+	// print the loadAI operation to standard output
+	fprintf(stdout, "loadAI r0, %d => r%d\n", offset, feasId);
+	// modify the target node's status to in-phys
+	targetNode->status = PHYS;
+	// modify the target node's physId to that of the feasible register
+	targetNode->physId = feasId;
+	return;
+}
+
+int descComp(regNode n1, regNode n2) {
+	// obtain number of occurrences of each register
+	int n1Count = 0;
+	int n2Count = 0;
+	intNode currNode = n1->firstOcc;
+	while(currNode != NULL) {
+		n1Count += 1;
+		currNode = currNode->next;
+	}
+	currNode = n2->firstOcc;
+	while(currNode != NULL) {
+		n2Count += 1;
+		currNode = currNode->next;
+	}
+	// return -1 if first register has more occs than second
+	if(n1Count > n2Count) {
+		return -1;
+	}
+	// return 0 if they have same number of occs
+	else if(n1Count == n2Count) {
+		return 0;
+	}
+	// return 1 if first register has fewer occs than second
+	else {
+		return 1;
+	}
+}
+
+
 /* Top-down allocation (simple) support functions defined here. */
 
 /* Top-down allocation (lecture) support functions defined here. */
@@ -402,6 +496,8 @@ int main(int argc, char *argv[]) {
 	// Debugging: test to see if the list was populated properly.
 	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 	printRegList(head);
+	// Debugging: see if lists properly free.
+	freeRegNode(head);
 	
 	close(file);
 
