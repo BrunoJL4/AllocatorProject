@@ -545,21 +545,22 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
 	// register before.
 	while(currReg != NULL) {
-		currReg = sortedRegs[index];
 		if(currReg->status != PHYS) {
 			currReg->status = MEM;
 			currReg->offset = currOffset;
 			currOffset -= 4;
 		}
 		index += 1;
+		currReg = sortedRegs[index];
 	}
 	// debugging: print the contents of sortedRegs.
 	currReg = sortedRegs[0];
 	index = 0;
 	while(currReg != NULL) {
-		currReg = sortedRegs[index];
 		printRegNode(currReg);
+		printf("\n");
 		index += 1;
+		currReg = sortedRegs[index];
 	}
 
 
