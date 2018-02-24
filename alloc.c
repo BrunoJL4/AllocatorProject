@@ -511,6 +511,33 @@ void opSimpleTD(char *currLine, regNode head) {
 		uint inReg = nextNum(currLine, &currIndex);
 		// following that, another register.
 		uint outReg = nextNum(currLine, &currIndex);
+		uint inPhysReg;
+		uint outPhysReg;
+		regNode inRegNode = getRegNode(inReg, head);
+		regNode outRegNode = getRegNode(outReg,head);
+		// if the input register is allocated, use that physical register.
+		if(inRegNode->status == PHYS) {
+			inPhysReg = inRegNode->physId;
+		}
+		// otherwise, use the first feasible register and fetch the value into that.
+		else{
+			inPhysReg = 1;
+			fetchReg(inReg, inPhysReg, head);
+		}
+		// if the output register is allocated, use that.
+		if(outRegNode->status == PHYS) {
+			outPhysReg = outRegNode->physId;
+		}
+		// otherwise, use the first feasible register and spill the value after
+		// the operation.
+		else{
+			outPhysReg = 1;
+		}
+		fprintf(stdout, "load r%d => r%d\n", inPhysReg, outPhysReg);
+		if(outRegNode->status == MEM) {
+			spillReg(outReg, outPhysReg, head);
+		}
+
 	}
 	else if(strcmp(opString, "store") == 0) {
 		// store r1 => r2 means: store r1 into MEM[r2]
@@ -518,6 +545,30 @@ void opSimpleTD(char *currLine, regNode head) {
 		uint inReg = nextNum(currLine, &currIndex);
 		// following that, another register.
 		uint outReg = nextNum(currLine, &currIndex);
+		uint inPhysReg;
+		uint outPhysReg;
+		regNode inRegNode = getRegNode(inReg, head);
+		regNode outRegNode = getRegNode(outReg,head);
+		// if the input register is allocated, use that physical register.
+		if(inRegNode->status == PHYS) {
+			inPhysReg = inRegNode->physId;
+		}
+		// otherwise, use the first feasible register and fetch the value into that.
+		else{
+			inPhysReg = 1;
+			fetchReg(inReg, inPhysReg, head);
+		}
+		// treat the output register the same way, since it's being read from rather than
+		// written to (its memory is what's touched). it thus uses the second feasible
+		// register (in case r1 is taken) if needed.
+		if(outRegNode->status == PHYS) {
+			outPhysReg = outRegNode->physId;
+		}
+		else{
+			outPhysReg = 2;
+			fetchReg(outReg, outPhysReg, head);
+		}
+		fprintf(stdout, "store r%d => r%d\n", inPhysReg, outPhysReg);
 	}
 	// can i lump in add, sub, mult, lshift, and rshift into one contingent branch?
 	// they function identically, syntactically speaking. 
