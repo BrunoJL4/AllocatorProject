@@ -519,6 +519,49 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
 	// descending order of occurrences.
 	regNode *sortedRegs = sortedRegArr(head);
+	// Get the number of allocatable registers (if any) by subtracting 2 (for the feasible
+	// registers) from numRegisters.
+	int availableRegs = numRegisters - 2;
+	// Start allocating physical registers at r3.
+	uint currId = 3; 
+	uint index = 0;
+	regNode currReg = sortedRegs[0];
+	// Allocate as many physical registers as we have available for such, until we
+	// either run out of physical registers or virtual registers (in sortedRegs).
+	while(availableRegs > 0 && currReg != NULL) {
+		// Give the currId as a physically-allocated space to the next virtual register
+		// in line, and change its status.
+		currReg = sortedRegs[index];
+		currReg->status = PHYS;
+		currReg->physId = currId;
+		index += 1;
+		currId += 1;
+		availableRegs -= 1;
+	}
+	// Start allocating offsets at -4 (as in r0, -4).
+	int currOffset = -4;
+	index = 0;
+	currReg = sortedRegs[0];
+	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
+	// register before.
+	while(currReg != NULL) {
+		currReg = sortedRegs[index];
+		if(currReg->status != PHYS) {
+			currReg->status = MEM;
+			currReg->offset = currOffset;
+			currOffset -= 4;
+		}
+		index += 1;
+	}
+	// debugging: print the contents of sortedRegs.
+	currReg = sortedRegs[0];
+	index = 0;
+	while(currReg != NULL) {
+		currReg = sortedRegs[index];
+		printRegNode(currReg);
+		index += 1;
+	}
+
 
 	// free the structs of the regNode list
 	freeRegNode(head);
