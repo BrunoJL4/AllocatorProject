@@ -83,7 +83,7 @@ void addOcc(int occ, uint id, regNode head) {
 	intNode currNode = currReg->firstOcc;
 	if(currNode == NULL) {
 		currReg->firstOcc = newNode;
-		printf("Successfully added occ %d to r%d!\n", occ, id);
+//		printf("Successfully added occ %d to r%d!\n", occ, id);
 		return;
 	}
 	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
@@ -101,7 +101,7 @@ void addOcc(int occ, uint id, regNode head) {
 	}
 	// If we've reached the end without a match, add newNode to the end, then return.
 	currNode->next = newNode;
-	printf("Successfully added occ %d to r%d!\n", occ, id);
+//	printf("Successfully added occ %d to r%d!\n", occ, id);
 	return;
 }
 
@@ -124,7 +124,7 @@ void addReg(uint id, regNode head) {
 	}
 	regNode newNode = createRegNode(id);
 	curr->next = newNode;
-	printf("Successfully added r%d to list!\n", id);
+//	printf("Successfully added r%d to list!\n", id);
 	return;
 }
 
@@ -147,7 +147,7 @@ regNode genRegList(FILE *file) {
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
-			printf("Instruction: %d\n", currInstr);
+//			printf("Instruction: %d\n", currInstr);
 			// First, find the index of the initial non-blank character.
 			uint currIndex = 0;
 			uint firstIndex = 0;
@@ -178,14 +178,14 @@ regNode genRegList(FILE *file) {
 			int opReg3 = -1;
 			int opConst = -1;
 			if(strcmp(opString, "loadI") == 0) {
-				printf("loadI operation.\n");
+//				printf("loadI operation.\n");
 				// next value would be a constant.
 				opConst = nextNum(currLine, &currIndex);
 				// following that, a register.
 				opReg1 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "loadAI") == 0) {
-				printf("loadAI operation.\n");
+//				printf("loadAI operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, a constant.
@@ -194,21 +194,21 @@ regNode genRegList(FILE *file) {
 				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "load") == 0) {
-				printf("load operation.\n");
+//				printf("load operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
 				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "store") == 0) {
-				printf("store operation.\n");
+//				printf("store operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
 				opReg2 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "storeAI") == 0) {
-				printf("storeAI operation.\n");
+//				printf("storeAI operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -217,7 +217,7 @@ regNode genRegList(FILE *file) {
 				opConst = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "add") == 0) {
-				printf("add operation.\n");
+//				printf("add operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -226,7 +226,7 @@ regNode genRegList(FILE *file) {
 				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "sub") == 0) {
-				printf("sub operation.\n");
+//				printf("sub operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -235,7 +235,7 @@ regNode genRegList(FILE *file) {
 				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "mult") == 0) {
-				printf("mult operation. \n");
+//				printf("mult operation. \n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -244,7 +244,7 @@ regNode genRegList(FILE *file) {
 				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "lshift") == 0) {
-				printf("lshift operation.\n");
+//				printf("lshift operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -253,7 +253,7 @@ regNode genRegList(FILE *file) {
 				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "rshift") == 0) {
-				printf("rshift operation.\n");
+//				printf("rshift operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -262,7 +262,7 @@ regNode genRegList(FILE *file) {
 				opReg3 = nextNum(currLine, &currIndex);
 			}
 			else if(strcmp(opString, "output") == 0) {
-				printf("output operation.\n");
+//				printf("output operation.\n");
 				// value would be a constant.
 				opConst = nextNum(currLine, &currIndex);
 			}
@@ -270,16 +270,16 @@ regNode genRegList(FILE *file) {
 				printf("ERROR! No valid operation provided.\n");
 				exit(EXIT_FAILURE);
 			}
-			printf("opReg1: %d\n", opReg1);
-			printf("opReg2: %d\n", opReg2);
-			printf("opReg3: %d\n", opReg3);
-			printf("opConst: %d\n", opConst);
+//			printf("opReg1: %d\n", opReg1);
+//			printf("opReg2: %d\n", opReg2);
+//			printf("opReg3: %d\n", opReg3);
+//			printf("opConst: %d\n", opConst);
 			// FIRST CASE: if firstNode is NULL, set it to the first of the registers
 			// that appears.
 			if(firstNode == NULL) {
 				if(opReg1 != -1) {
 					firstNode = createRegNode(opReg1);
-					printf("Succesfully added r%d as first register!\n", opReg1);
+//					printf("Succesfully added r%d as first register!\n", opReg1);
 				}
 				else if(opReg2 != -1) {
 					firstNode = createRegNode(opReg2);
@@ -432,22 +432,22 @@ int descComp(const void *in1, const void *in2) {
 		n2Count += 1;
 		currNode = currNode->next;
 	}
-	printf("comparing r%d and r%d\n", n1->id, n2->id);
-	printf("number of occs in r%d\n: %d\n", n1->id, n1Count);
-	printf("number of occs in r%d\n: %d\n", n2->id, n2Count);
+//	printf("comparing r%d and r%d\n", n1->id, n2->id);
+//	printf("number of occs in r%d: %d\n", n1->id, n1Count);
+//	printf("number of occs in r%d: %d\n", n2->id, n2Count);
 	// return -1 if first register has more occs than second
 	if(n1Count > n2Count) {
-		printf("r%d > r%d!\n", n1->id, n2->id);
+//		printf("r%d > r%d!\n\n", n1->id, n2->id);
 		return -1;
 	}
 	// return 0 if they have same number of occs
 	else if(n1Count == n2Count) {
-		printf("r%d == r%d!\n", n1->id, n2->id);
+//		printf("r%d == r%d!\n\n", n1->id, n2->id);
 		return 0;
 	}
 	// return 1 if first register has fewer occs than second
 	else {
-		printf("r%d < r%d!\n", n1->id, n2->id);
+//		printf("r%d < r%d!\n\n", n1->id, n2->id);
 		return 1;
 	}
 }
@@ -479,9 +479,11 @@ regNode *sortedRegArr(regNode head) {
 	// Transfer midArr to a dynamically-allocated return array.
 	regNode *retArr = (regNode *) malloc(listLength * sizeof(regNode));
 	retArr[listLength-1] = NULL;
+	int i;
 	for(i = 0; i < listLength-1; i++) {
 		retArr[i] = midArr[i];
 	}
+	
 	/*
 	// debugging: print contents of retArr:
 	printf("printing contents of retArr: \n");
@@ -502,6 +504,7 @@ regNode *sortedRegArr(regNode head) {
 		}
 	}
 	*/
+	
 	return retArr;
 }
 
