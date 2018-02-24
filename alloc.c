@@ -446,6 +446,12 @@ int descComp(regNode n1, regNode n2) {
 
 /* Top-down allocation (simple) support functions defined here. */
 
+void topDownSimple(int numRegisters, FILE *file) {
+	
+	return;
+}
+
+
 /* Top-down allocation (lecture) support functions defined here. */
 
 /* Bottom-up allocation support functions defined here. */
@@ -468,7 +474,6 @@ int main(int argc, char *argv[]) {
 	char typeOp;
 	// the file pointer for the requested ILOC file
 	FILE *file;
-
 	// Fetch the number of registers from the first argument. Using strtol()
 	// because it's a stdlib function that gets the job done.
 	numRegs = strtol(argv[1], NULL, 10);
@@ -479,9 +484,6 @@ int main(int argc, char *argv[]) {
 	}
 	// Get the type character from typeStr.
 	typeOp = argv[2][0];
-//	printf("numRegs is: %d\n", numRegs);
-//	printf("typeOp is: %c\n", typeOp);
-//  printf("filename is: %s\n", argv[3]);
 	// Open up the file pointer to the input file. Read permissions ONLY.
 	file = fopen(argv[3], "r");
 	// If file-opening operation was unsuccessful, print an error and exit.
@@ -489,16 +491,23 @@ int main(int argc, char *argv[]) {
 		printf("Error opening file: %s !\n", argv[3]);
 		exit(EXIT_FAILURE);
 	}
+	// call the according allocation algorithm
+	if(typeOp == 's') {
+		topDownSimple(numRegs, file);
+	}
+	else if(typeOp == 't') {
+		printf("Requested complex top-down allocator. Not currently implemented.\n");
+		return 0;
+	}
+	else if(typeOp == 'b') {
+		printf("Requested bottom-down allocator. Not currently implemented.\n");
+		return 0;
+	}
+	else {
+		printf("Error in main()! Invalid allocator type input: %c\n", typeOp);
+		exit(EXIT_FAILURE);
+	}
 
-	// First step: populate a linked list of regNodes with corresponding intNodes
-	// and information, using the file as input.
-	regNode head = genRegList(file);
-	// Debugging: test to see if the list was populated properly.
-	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-	printRegList(head);
-	// Debugging: see if lists properly free.
-	freeRegNode(head);
-	
 	close(file);
 
 	return 1;
@@ -509,7 +518,7 @@ int main(int argc, char *argv[]) {
 
 /* SKELETON CODE FOR TRAVERSING AN ILOC FILE AND PARSING OPS LINE-BY-LINE:*/
 /*
-// Getting started: let's go through the file and print every line that isn't
+    // Getting started: let's go through the file and print every line that isn't
 	// a blank space, or that isn't a comment. Go until EOF.
 	ssize_t read = 0;
 	ssize_t len = 0;

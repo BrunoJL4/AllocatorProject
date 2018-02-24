@@ -41,6 +41,7 @@ than n2, 0 if they're the same, 1 if n1 has fewer occurrences than n2.
 void topDownSimple(int numRegisters, FILE *file): performs the simple top-down allocation
 algorithm, given a file pointer. Makes use of support functions to build the regNode list,
 and then makes an array that stores the regNode pointers in descending order of occurrences. 
+If r0 is one of the registers, ignore it and move on if possible.
 
 Given numRegisters, moves through the array and assigns physical, allocatable registers (if any)
 until we run out. numRegisters - 2 is the number of allocatable registers, so if we have
@@ -70,11 +71,12 @@ If a virtual register is stored in a physical register (allocated), set the vari
 ID of that register. If it's stored in memory (at an offset), determine which feasible register
 to use. For lines with multiple inputs, just use the first feasible register for the first
 input and the second feasible register for the second input. Then call fetchReg(virtId, 
-feasId, head) to output the proper spillcode.
+feasId, head) to output the proper spillcode. Note that a virtual register can appear twice
+as an input, so don't fetch it twice (redundant).
 
 For the output, check the corresponding virtual register's regNode. If it's in a physically
 -allocated register, use that. If it is an actual, virtual register, we'll need to fetch
 that and put it into the first feasible register. Then we'll need to spill that feasible
-register back to memory.
+register back to memory using spillReg().
 
 Do this line-by-line until finished.
