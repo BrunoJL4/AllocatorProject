@@ -18,9 +18,17 @@ intNode createIntNode(int value) {
 regNode createRegNode(uint id) {
 	regNode newNode = (regNode) malloc(sizeof(struct registerNode)); 
 	newNode->id = id;
-	newNode->status = NONE;
+	// SPECIAL CASE: r0 is always in a physical register of ID 0.
+	if(id == 0) {
+		newNode->status = PHYS;
+		newNode->physId = 0;
+	}
+	// otherwise, give default values.
+	else {
+		newNode->status = NONE;
+		newNode->physId = 999;
+	}
 	newNode->firstOcc = NULL;
-	newNode->physId = 999;
 	newNode->offset = -9001;
 	newNode->next = NULL;
 	return newNode;
@@ -553,7 +561,12 @@ void topDownSimple(int numRegisters, FILE *file) {
 		index += 1;
 		currReg = sortedRegs[index];
 	}
+	// debugging: print out the contents of the regNode list itself.
+	printf("printing out all of the registers in the linked list!\n");
+	printRegList(head);
+	printf("\n\n");
 	// debugging: print the contents of sortedRegs.
+	printf("Printing out the sorted register list!\n");
 	currReg = sortedRegs[0];
 	index = 0;
 	while(currReg != NULL) {
