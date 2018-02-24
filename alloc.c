@@ -192,76 +192,17 @@ regNode genRegList(FILE *file) {
 				// following that, a register.
 				opReg1 = nextNum(currLine, &currIndex);
 			}
-			else if(strcmp(opString, "loadAI") == 0) {
-//				printf("loadAI operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, a constant.
-				opConst = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "load") == 0) {
+			else if(strcmp(opString, "load") == 0 || strcmp(opString, "store") == 0) {
 //				printf("load operation.\n");
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
 				opReg2 = nextNum(currLine, &currIndex);
 			}
-			else if(strcmp(opString, "store") == 0) {
-//				printf("store operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "storeAI") == 0) {
-//				printf("storeAI operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, a constant.
-				opConst = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "add") == 0) {
-//				printf("add operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "sub") == 0) {
-//				printf("sub operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register. 
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "mult") == 0) {
-//				printf("mult operation. \n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "lshift") == 0) {
-//				printf("lshift operation.\n");
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "rshift") == 0) {
-//				printf("rshift operation.\n");
+			else if(strcmp(opString, "add") == 0 || strcmp(opString, "sub") == 0 ||
+					strcmp(opString, "mult") == 0 || strcmp(opString, "lshift") == 0 ||
+					strcmp(opString, "rshift") == 0) {
+//				printf("%s operation.\n", opString);
 				// next value would be a register.
 				opReg1 = nextNum(currLine, &currIndex);
 				// following that, another register.
@@ -387,7 +328,7 @@ regNode getRegNode(uint id, regNode head) {
 	return NULL;
 }
 
-void spillReg(uint targetId, uint feasId, regNode head) {
+void spillReg(uint targetId, uint physId, regNode head) {
 	// obtain the regNode instance we want to spill/modify
 	regNode targetNode = getRegNode(targetId, head);
 	if(targetNode == NULL) {
@@ -397,7 +338,7 @@ void spillReg(uint targetId, uint feasId, regNode head) {
 	// obtain its offset
 	int offset = targetNode->offset;
 	// print the spill operation to standard output
-	fprintf(stdout, "storeAI r%d => r0, %d\n", feasId, offset);
+	fprintf(stdout, "storeAI r%d => r0, %d\n", physId, offset);
 	// modify the target node's status to in memory
 	targetNode->status = MEM;
 	// modify the target node's physId to 999 (default)
@@ -405,7 +346,7 @@ void spillReg(uint targetId, uint feasId, regNode head) {
 	return;
 }
 
-void fetchReg(uint targetId, uint feasId, regNode head) {
+void fetchReg(uint targetId, uint physId, regNode head) {
 	// obtain the regNode instance we want to fetch/modify
 	regNode targetNode = getRegNode(targetId, head);
 	if(targetNode == NULL) {
@@ -415,11 +356,11 @@ void fetchReg(uint targetId, uint feasId, regNode head) {
 	// obtain its offset
 	int offset = targetNode->offset;
 	// print the loadAI operation to standard output
-	fprintf(stdout, "loadAI r0, %d => r%d\n", offset, feasId);
+	fprintf(stdout, "loadAI r0, %d => r%d\n", offset, physId);
 	// modify the target node's status to in-phys
 	targetNode->status = PHYS;
-	// modify the target node's physId to that of the feasible register
-	targetNode->physId = feasId;
+	// modify the target node's physId to that of the physical register
+	targetNode->physId = physId;
 	return;
 }
 
@@ -548,15 +489,21 @@ void opSimpleTD(char *currLine, regNode head) {
 		int constant = nextNum(currLine, &currIndex);
 		// following that, a register.
 		uint outReg = nextNum(currLine, &currIndex);
-	}
-	else if(strcmp(opString, "loadAI") == 0) {
-		// loadAI r0, 4 => r3
-		// next value would be a register.
-		uint inReg = nextNum(currLine, &currIndex);
-		// following that, a constant.
-		int constant = nextNum(currLine, &currIndex);
-		// finally, another register.
-		uint outReg = nextNum(currLine, &currIndex);
+		regNode outRegNode = getRegNode(outReg, head);
+		uint physReg;
+		// if the output register is allocated, use its allocated physical register.
+		if(outRegNode->status == PHYS) {
+			physReg = outRegNode->physId;
+		}
+		// if the output register isn't allocated, use the first available feasible
+		// register and then spill it to the virtual register's offset.
+		else{
+			physReg = 1;
+		}
+		fprintf(stdout, "loadI %d => r%d\n", constant, physReg);
+		if(outRegNode->status == MEM) {
+			spillReg(outReg, physReg, head);
+		}
 	}
 	else if(strcmp(opString, "load") == 0) {
 		// load r1 => r2 means: load MEM[r1] into r2
@@ -571,15 +518,6 @@ void opSimpleTD(char *currLine, regNode head) {
 		uint inReg = nextNum(currLine, &currIndex);
 		// following that, another register.
 		uint outReg = nextNum(currLine, &currIndex);
-	}
-	else if(strcmp(opString, "storeAI") == 0) {
-		// storeAI r1 => r0, 4
-		// next value would be a register.
-		uint inReg = nextNum(currLine, &currIndex);
-		// following that, another register.
-		uint outReg = nextNum(currLine, &currIndex);
-		// finally, a constant.
-		int constant = nextNum(currLine, &currIndex);
 	}
 	// can i lump in add, sub, mult, lshift, and rshift into one contingent branch?
 	// they function identically, syntactically speaking. 
@@ -759,175 +697,3 @@ int main(int argc, char *argv[]) {
 
 
 }
-
-
-/* SKELETON CODE FOR TRAVERSING AN ILOC FILE AND PARSING OPS LINE-BY-LINE:*/
-/*
-    // Getting started: let's go through the file and print every line that isn't
-	// a blank space, or that isn't a comment. Go until EOF.
-	ssize_t read = 0;
-	ssize_t len = 0;
-	char *currLine = NULL;
-	// These variables store, respectively, the first regNode in the list, and
-	// the current/last regNode currently in the list.
-	regNode firstNode = NULL;
-	regNode currNode = NULL;
-	// Let's go to each non-blank line and obtain the type of the operation, plus
-	// the (up to three) registers involved. Registers will be obtained in order
-	// of appearance, and a register can appear more than once in an operation;
-	// Current valid instruction in ILOC.
-	int currInstr = 0;
-	while(read = getline(&currLine, &len, file) != -1) {
-		// Ignore a blank line or a comment.
-		if(strlen(currLine) != 1 && currLine[0] != '/') {
-			// First, find the index of the initial non-blank character.
-			uint currIndex = 0;
-			uint firstIndex = 0;
-			char currChar = currLine[currIndex];
-			while(isblank(currChar)) {
-				currIndex += 1;
-				currChar = currLine[currIndex];
-			}
-			firstIndex = currIndex;
-			// Now find the index of the first blank character following it.
-			uint lastIndex = currIndex;
-			while(!isblank(currChar)) {
-				currIndex += 1;
-				currChar = currLine[currIndex];
-			}
-			lastIndex = currIndex;
-			// The length of the actual operation string will be 1 more than the
-			// difference between the two indexes. Copy the operation string
-			// over to a null-terminated stack buffer, to prepare for comparison.
-			uint opLength = lastIndex - firstIndex;
-			char opString[opLength + 1];
-			opString[opLength] = '\0';
-			strncpy(opString, &(currLine[firstIndex]), opLength);
-			// Can now set the enum for the current operation type.
-			OP_TYPE op = DEFAULT;
-			// Any operation may have up to 3 registers involved (duplicates allowed),
-			// and one constant value. 
-			int opReg1 = -1;
-			int opReg2 = -1;
-			int opReg3 = -1;
-			int opConst = -1;
-			if(strcmp(opString, "loadI") == 0) {
-				printf("loadI operation.\n");
-				op = LOADI;
-				// next value would be a constant.
-				opConst = nextNum(currLine, &currIndex);
-				// following that, a register.
-				opReg1 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "loadAI") == 0) {
-				printf("loadAI operation.\n");
-				op = LOADAI;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, a constant.
-				opConst = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "load") == 0) {
-				printf("load operation.\n");
-				op = LOAD;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "store") == 0) {
-				printf("store operation.\n");
-				op = STORE;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "storeAI") == 0) {
-				printf("storeAI operation.\n");
-				op = STOREAI;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, a constant.
-				opConst = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "add") == 0) {
-				printf("add operation.\n");
-				op = ADD;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "sub") == 0) {
-				printf("sub operation.\n");
-				op = SUB;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register. 
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "mult") == 0) {
-				printf("mult operation. \n");
-				op = MULT;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "lshift") == 0) {
-				printf("lshift operation.\n");
-				op = LSHIFT;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "rshift") == 0) {
-				printf("rshift operation.\n");
-				op = RSHIFT;
-				// next value would be a register.
-				opReg1 = nextNum(currLine, &currIndex);
-				// following that, another register.
-				opReg2 = nextNum(currLine, &currIndex);
-				// finally, another register.
-				opReg3 = nextNum(currLine, &currIndex);
-			}
-			else if(strcmp(opString, "output") == 0) {
-				printf("output operation.\n");
-				op = OUTPUT;
-				// value would be a constant.
-				opConst = nextNum(currLine, &currIndex);
-			}
-			else{
-				printf("ERROR! No valid operation provided.\n");
-				exit(EXIT_FAILURE);
-			}
-			printf("current instruction: %d\n", currInstr);
-			printf("enum value: %d\n", op);
-			printf("opReg1: %d\n", opReg1);
-			printf("opReg2: %d\n", opReg2);
-			printf("opReg3: %d\n", opReg3);
-			printf("opConst: %d\n", opConst);
-			// increment the current instruction
-			currInstr += 1;
-		}
-		// free the current line's memory, and set the pointer to null
-		free(currLine);
-		currLine = NULL;
-	}
-	// Be kind: Rewind (the file pointer)!
-	rewind(file);
-	*/

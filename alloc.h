@@ -27,17 +27,15 @@ These will be used in the support function that provides the operation type
 and register ID's (when applicable).*/
 typedef enum OP_TYPE_ENUM {
 	LOADI = 0,
-	LOADAI = 1,
-	LOAD = 2,
-	STORE = 3,
-	STOREAI = 4,
-	ADD = 5,
-	SUB = 6,
-	MULT = 7,
-	LSHIFT = 8,
-	RSHIFT = 9,
-	OUTPUT = 10,
-	DEFAULT = 11
+	LOAD = 1,
+	STORE = 2,
+	ADD = 3,
+	SUB = 4,
+	MULT = 5,
+	LSHIFT = 6,
+	RSHIFT = 7,
+	OUTPUT = 8,
+	DEFAULT = 9
 } OP_TYPE;
 
 /* The enum types that tell us whether a virtual register is currently spilled in memory,
