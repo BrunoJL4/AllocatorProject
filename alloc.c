@@ -322,26 +322,29 @@ regNode genRegList(FILE *file) {
 	}
 	// Be kind: Rewind (the file pointer)!
 	rewind(file);
-	// Return firstNode
 	return firstNode;
+}
+
+void printRegNode(regNode node) {
+	printf("contents of r%d:\n", node->id);
+	printf("status: %d\n", node->status);
+	printf("occs: ");
+	intNode currOcc = node->firstOcc;
+	while(currOcc != NULL) {
+		printf("%d, ", currOcc->val);
+		currOcc = currOcc->next;
+	}
+	printf("\n");
+	printf("physical ID (if applicable): %d\n", node->physId);
+	printf("offset in memory (if applicable): %d\n", node->offset);
+	return;
 }
 
 void printRegList(regNode head) {
 	regNode currReg = head;
 	// iterate through each register node and print all of the contents.
 	while(currReg != NULL) {
-		printf("contents of r%d:\n", currReg->id);
-		printf("status: %d\n", currReg->status);
-		printf("occs: ");
-		intNode currOcc = currReg->firstOcc;
-		while(currOcc != NULL) {
-			printf("%d, ", currOcc->val);
-			currOcc = currOcc->next;
-		}
-		printf("\n");
-		printf("physical ID (if applicable): %d\n", currReg->physId);
-		printf("offset in memory (if applicable): %d\n", currReg->offset);
-		printf("next address: %x\n", currReg->next);
+		printRegNode(currReg);
 		currReg = currReg->next;
 	}
 	return;

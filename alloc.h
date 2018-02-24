@@ -135,11 +135,50 @@ Attempts will regularly be made to add duplicate occurrences, as registers will 
 appear in the same line.*/
 void addOcc(int occ, uint id, regNode);
 
+/* Debugging function. Prints out the contents of a regNode. */
+void printRegNode(regNode node);
+
 /* Debugging function. Runs through a list of regNodes and prints their contents,
 including the occurrences present in each. */
 void printRegList(regNode head);
 
+/* Returns -1 if the target intNode doesn't exist, 1 if it does. */
+int intNodeExists(int target, intNode head);
 
+/* Frees a list of intNodes. */
+void freeIntNode(intNode head);
+
+/* Returns a regNode if one matching the target ID exists. Returns NULL if it doesn't. */
+regNode getRegNode(uint id, regNode head);
+
+/* Performs the spill code given a virtual register ID, the feasible register ID
+that its value is stored in, and the head of the regNode list. Also changes the
+register's status and location members accordingly. */
+void spillReg(uint targetId, uint feasId, regNode head);
+
+/* Performs the fetching spill code given a virtual register ID, the feasible register ID
+that its value will be stored in, and the head of the regNode list. Also changes the
+register's status and location members accordingly (physId set to 999, default). */
+void fetchReg(uint targetId, uint feasId, regNode head);
+
+/* Compares the two regNodes such that a qsort()'ed list will be set in descending order
+of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the same,
+1 if n1 has fewer occurrences than n2. */
+int descComp(regNode n1, regNode n2);
+
+
+
+
+/* Simple top-down exclusive functions below. */
+
+/* Performs top-down allocation given the number of registers from the user, and the
+file pointer from their file. Output is given to stdout. */
+void topDownSimple(int numRegisters, FILE *file);
+
+/* Lecture top-down exclusive functions below. */
+
+
+/* Bottom-up exclusive functions below. */
 
 
 #endif

@@ -1,0 +1,80 @@
+Methods to implement:
+
+int intNodeExists(int input, intNode head): returns -1 if a node with the
+given input doesn't exist, 1 if it does. 
+
+void freeIntNode(intNode head): frees all of the intNodes in a linked list.
+Will use in refactoring the free() method for regNodes.
+
+regNode getRegNode(uint id, regNode head): returns a pointer to the node
+with the given ID, or NULL if it doesn't exist. Can be used to
+check the existence of a regNode as well by checking if the output is NULL.
+
+void spillReg(uint targetId, uint feasId, regNode head): fprintf's out spill
+code operations to stdout given the target virtual register ID, the feasible
+register whose value we'll be spilling from, and the head of the regNode
+list. Also modifies the target regNode's status and location members accordingly. 
+This will be used when a non-allocated virtual register is an output field (not its memory)
+and needs to have data (feasible register) saved to its offset.
+
+void fetchReg(uint targetId, uint feasId, regNode head): fprintf's out the
+spill code fetching operations to stdout given the target virtual register ID,
+the target feasible register, and the head of the regNode list. Modifies the
+target regNode's status and location members accordingly. This will be used
+when a non-allocated virtual register is an input field (including if we
+want to access its memory) and needs to have its data put into a feasible
+register.
+
+** Might not be needed/useful. **
+void performOp(OP_TYPE op, int reg1, int reg2, int reg3, int constant):
+receives an operation type and the given inputs, and prints the operation
+to stdout. This function assumes that the proper play with spill code
+(when applicable) has been performed.
+** 							   ** 
+
+int descComp(regNode n1, regNode n2): compares the two regNodes such that a qsort()'ed
+list will be set in descending order of occurrences. Returns -1 if n1 has more occurrences
+than n2, 0 if they're the same, 1 if n1 has fewer occurrences than n2.
+
+------------------------------------------------------------------------------------------------
+
+void topDownSimple(int numRegisters, FILE *file): performs the simple top-down allocation
+algorithm, given a file pointer. Makes use of support functions to build the regNode list,
+and then makes an array that stores the regNode pointers in descending order of occurrences. 
+
+Given numRegisters, moves through the array and assigns physical, allocatable registers (if any)
+until we run out. numRegisters - 2 is the number of allocatable registers, so if we have
+numRegisters == 4, we assign allocatable registers to the first two virtual registers in
+the array (or as many as we can assign without leaving the array). "Assignment" is
+done by changing the status and location members of the corresponding regNodes.
+
+Note: r0 is a special case of a physical register. It will always be first in the list of
+regNodes. We always assign it as a physical register, with ID 0. 
+
+Once we've assigned physical registers, we go through the original linked list and assign
+negative offsets of r0 to any regNode with status == NONE, in order of appearance in the
+linked list. We set its status to MEM. 
+
+With the registers given their proper assignments, we start to parse through the file line-by-line.
+Ignore the first valid line (loadI 1024 => r0) and fprintf that same line out manually. 
+Also note that r0 could be an input for any operation, in which case we just treat it
+as a physical register.
+
+For each line, we first gather the virtual register ID's in order of appearance (reg1 and/or 
+reg2 and/or reg3) and the constant (if applicable). Then we set variables which will contain
+the converted values of each of the virtual registers (if applicable) and the constant
+(if applicable)... depends on the operation. For the next steps, registers are fetched by
+virtual ID using getRegNode().
+
+If a virtual register is stored in a physical register (allocated), set the variable to the
+ID of that register. If it's stored in memory (at an offset), determine which feasible register
+to use. For lines with multiple inputs, just use the first feasible register for the first
+input and the second feasible register for the second input. Then call fetchReg(virtId, 
+feasId, head) to output the proper spillcode.
+
+For the output, check the corresponding virtual register's regNode. If it's in a physically
+-allocated register, use that. If it is an actual, virtual register, we'll need to fetch
+that and put it into the first feasible register. Then we'll need to spill that feasible
+register back to memory.
+
+Do this line-by-line until finished.
