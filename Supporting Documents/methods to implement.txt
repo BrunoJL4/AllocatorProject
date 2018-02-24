@@ -59,7 +59,10 @@ linked list. We set its status to MEM.
 With the registers given their proper assignments, we start to parse through the file line-by-line.
 Ignore the first valid line (loadI 1024 => r0) and fprintf that same line out manually. 
 Also note that r0 could be an input for any operation, in which case we just treat it
-as a physical register.
+as a physical register. 
+
+EDIT 2-24 4:06PM: Changes to initializing r0 have made sure that r0 is just treated as a
+physical register. No need to specifically consider it.
 
 For each line, we first gather the virtual register ID's in order of appearance (reg1 and/or 
 reg2 and/or reg3) and the constant (if applicable). Then we set variables which will contain

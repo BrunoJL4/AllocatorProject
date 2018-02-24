@@ -516,6 +516,93 @@ regNode *sortedRegArr(regNode head) {
 	return retArr;
 }
 
+void opSimpleTD(char *currLine, regNode head) {
+	// First, find the index of the initial non-blank character.
+	uint currIndex = 0;
+	uint firstIndex = 0;
+	char currChar = currLine[currIndex];
+	while(isblank(currChar)) {
+		currIndex += 1;
+		currChar = currLine[currIndex];
+	}
+	firstIndex = currIndex;
+	// Now find the index of the first blank character following it.
+	uint lastIndex = currIndex;
+	while(!isblank(currChar)) {
+		currIndex += 1;
+		currChar = currLine[currIndex];
+	}
+	lastIndex = currIndex;
+	// The length of the actual operation string will be 1 more than the
+	// difference between the two indexes. Copy the operation string
+	// over to a null-terminated stack buffer, to prepare for comparison.
+	uint opLength = lastIndex - firstIndex;
+	char opString[opLength + 1];
+	opString[opLength] = '\0';
+	strncpy(opString, &(currLine[firstIndex]), opLength);
+	// Any operation may have up to 3 registers involved (duplicates allowed),
+	// and one constant value. 
+	if(strcmp(opString, "loadI") == 0) {
+		// loadI 5 => r6
+		// next value would be a constant.
+		int constant = nextNum(currLine, &currIndex);
+		// following that, a register.
+		uint outReg = nextNum(currLine, &currIndex);
+	}
+	else if(strcmp(opString, "loadAI") == 0) {
+		// loadAI r0, 4 => r3
+		// next value would be a register.
+		uint inReg = nextNum(currLine, &currIndex);
+		// following that, a constant.
+		int constant = nextNum(currLine, &currIndex);
+		// finally, another register.
+		uint outReg = nextNum(currLine, &currIndex);
+	}
+	else if(strcmp(opString, "load") == 0) {
+		// load r1 => r2 means: load MEM[r1] into r2
+		// next value would be a register.
+		uint inReg = nextNum(currLine, &currIndex);
+		// following that, another register.
+		uint outReg = nextNum(currLine, &currIndex);
+	}
+	else if(strcmp(opString, "store") == 0) {
+		// store r1 => r2 means: store r1 into MEM[r2]
+		// next value would be a register.
+		uint inReg = nextNum(currLine, &currIndex);
+		// following that, another register.
+		uint outReg = nextNum(currLine, &currIndex);
+	}
+	else if(strcmp(opString, "storeAI") == 0) {
+		// storeAI r1 => r0, 4
+		// next value would be a register.
+		uint inReg = nextNum(currLine, &currIndex);
+		// following that, another register.
+		uint outReg = nextNum(currLine, &currIndex);
+		// finally, a constant.
+		int constant = nextNum(currLine, &currIndex);
+	}
+	// can i lump in add, sub, mult, lshift, and rshift into one contingent branch?
+	// they function identically, syntactically speaking. 
+	else if(strcmp(opString, "add") == 0 || strcmp(opString, "sub") == 0 || strcmp(opString, "mult") == 0
+		 || strcmp(opString, "lshift") == 0 || strcmp(opString, "rshift") == 0) {
+		// add r2, r3 => r4; add r2, r2 => r3; add r2, r2 => r2; so on.
+		// sub r2, r3 => r4; sub r2, r2 => r3; sub r2, r2 => r2; so on.
+		// same syntax for mult, lshift, and rshift.
+		uint inReg1 = nextNum(currLine, &currIndex);
+		uint inReg2 = nextNum(currLine, &currIndex);
+		uint outReg = nextNum(currLine, &currIndex);
+	}
+	else if(strcmp(opString, "output") == 0) {
+		// output 1028
+		// value would be a constant.
+		int constant = nextNum(currLine, &currIndex);
+	}
+	else{
+		printf("ERROR! No valid operation provided.\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
 
 
 
@@ -561,6 +648,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 		index += 1;
 		currReg = sortedRegs[index];
 	}
+	/*
 	// debugging: print out the contents of the regNode list itself.
 	printf("printing out all of the registers in the linked list!\n");
 	printRegList(head);
@@ -574,7 +662,31 @@ void topDownSimple(int numRegisters, FILE *file) {
 		printf("\n");
 		index += 1;
 		currReg = sortedRegs[index];
+	} */
+	// Now that the physical registers have been allocated (if any), we provide output
+	// contingent with what we find line-by-line.
+	// Getting started: let's go through the file and perform top-down operations on
+	// every non-blank line.
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
+	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
+	// the line and provide the according output.
+	int currInstr = 0;
+	while(read = getline(&currLine, &len, file) != -1) {
+		// Ignore a blank line or a comment.
+		if(strlen(currLine) != 1 && currLine[0] != '/') {
+			// perform the operation(s) for this line
+			opSimpleTD(currLine, head);
+			// increment the current instruction
+			currInstr += 1;
+		}
+		// free the current line's memory, and set the pointer to null
+		free(currLine);
+		currLine = NULL;
 	}
+	// Be kind: Rewind (the file pointer)!
+	rewind(file);
 
 
 	// free the structs of the regNode list

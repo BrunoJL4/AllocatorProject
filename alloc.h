@@ -178,6 +178,10 @@ regNode *sortedRegArr(regNode head);
 file pointer from their file. Output is given to stdout. */
 void topDownSimple(int numRegisters, FILE *file);
 
+/* Performs the given operations for simple top-down allocation, given the current line.
+This includes spilling, fetching, and standard output. */
+void opSimpleTD(char *currLine, regNode head);
+
 /* Lecture top-down exclusive functions below. */
 
 
