@@ -164,8 +164,13 @@ void fetchReg(uint targetId, uint feasId, regNode head);
 /* Compares the two regNodes such that a qsort()'ed list will be set in descending order
 of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the same,
 1 if n1 has fewer occurrences than n2. */
-int descComp(regNode n1, regNode n2);
+int descComp(const void *in1, const void *in2);
 
+/* Given a linked list of regNodes, returns a dynamically-allocated array with the regNodes 
+sorted in descending order of number of occurrences (besides r0). This means that for
+x virtual registers including r0, the length of the array will be x, with ret[x] == NULL. 
+Note that the array returned from here must be freed.*/
+regNode *sortedRegArr(regNode head);
 
 /* Simple top-down exclusive functions below. */
 

@@ -415,7 +415,10 @@ void fetchReg(uint targetId, uint feasId, regNode head) {
 	return;
 }
 
-int descComp(regNode n1, regNode n2) {
+int descComp(const void *in1, const void *in2) {
+	// cast the inputs to regNodes
+	regNode n1 = *((regNode *) in1);
+	regNode n2 = *((regNode *) in2);
 	// obtain number of occurrences of each register
 	int n1Count = 0;
 	int n2Count = 0;
@@ -429,25 +432,95 @@ int descComp(regNode n1, regNode n2) {
 		n2Count += 1;
 		currNode = currNode->next;
 	}
+	printf("comparing r%d and r%d\n", n1->id, n2->id);
+	printf("number of occs in r%d\n: %d\n", n1->id, n1Count);
+	printf("number of occs in r%d\n: %d\n", n2->id, n2Count);
 	// return -1 if first register has more occs than second
 	if(n1Count > n2Count) {
+		printf("r%d > r%d!\n", n1->id, n2->id);
 		return -1;
 	}
 	// return 0 if they have same number of occs
 	else if(n1Count == n2Count) {
+		printf("r%d == r%d!\n", n1->id, n2->id);
 		return 0;
 	}
 	// return 1 if first register has fewer occs than second
 	else {
+		printf("r%d < r%d!\n", n1->id, n2->id);
 		return 1;
 	}
 }
+
+regNode *sortedRegArr(regNode head) {
+	// First, get the length of the linked list.
+	int listLength = 0;
+	regNode currNode = head;
+	while(currNode != NULL) {
+		listLength += 1;
+		currNode = currNode->next;
+	}
+	currNode = head;
+	// Next, add each regNode (pointer) to a regNode array. This is the mid-point
+	// array which we'll sort using qsort(). Not to be confused with the return array.
+	regNode midArr[listLength - 1];
+	int index = 0;
+	while(currNode != NULL) {
+		// Don't add r0 to the array, as it doesn't get an allocatable register.
+		if(currNode->id != 0) {
+			// Add the register to the array.
+			midArr[index] = currNode;
+			index += 1;
+		}
+		currNode = currNode->next;
+	}
+	// Sort midArr using qsort() and descComp.
+	qsort((void *) midArr, listLength - 1, sizeof(regNode), descComp);
+	// Transfer midArr to a dynamically-allocated return array.
+	regNode *retArr = (regNode *) malloc(listLength * sizeof(regNode));
+	retArr[listLength-1] = NULL;
+	for(i = 0; i < listLength-1; i++) {
+		retArr[i] = midArr[i];
+	}
+	/*
+	// debugging: print contents of retArr:
+	printf("printing contents of retArr: \n");
+	for(i = 0; i < listLength; i++) {
+		// obtain number of occurrences
+		if(retArr[i] != NULL) {
+			printf("register id: %d\n", retArr[i]->id);
+			intNode currOcc = retArr[i]->firstOcc;
+			int len = 0;
+			while(currOcc != NULL) {
+				len += 1;
+				currOcc = currOcc->next;
+			}
+			printf("number of occs: %d\n\n", len);
+		}
+		else {
+			printf("retArr[%d] is NULL!\n", i);
+		}
+	}
+	*/
+	return retArr;
+}
+
+
 
 
 /* Top-down allocation (simple) support functions defined here. */
 
 void topDownSimple(int numRegisters, FILE *file) {
-	
+	// First, obtain the linked list of regNodes from the file.
+	regNode head = genRegList(file);
+	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
+	// descending order of occurrences.
+	regNode *sortedRegs = sortedRegArr(head);
+
+	// free the structs of the regNode list
+	freeRegNode(head);
+	// free the sorted register array (only an array of pointers, not structs):
+	free(sortedRegs);
 	return;
 }
 
