@@ -339,8 +339,6 @@ void spillReg(uint targetId, uint physId, regNode head) {
 	int offset = targetNode->offset;
 	// print the spill operation to standard output
 	fprintf(stdout, "storeAI r%d => r0, %d\n", physId, offset);
-	// modify the target node's status to in memory
-	targetNode->status = MEM;
 	// modify the target node's physId to 999 (default)
 	targetNode->physId = 999;
 	return;
@@ -357,8 +355,6 @@ void fetchReg(uint targetId, uint physId, regNode head) {
 	int offset = targetNode->offset;
 	// print the loadAI operation to standard output
 	fprintf(stdout, "loadAI r0, %d => r%d\n", offset, physId);
-	// modify the target node's status to in-phys
-	targetNode->status = PHYS;
 	// modify the target node's physId to that of the physical register
 	targetNode->physId = physId;
 	return;
@@ -528,10 +524,10 @@ void opSimpleTD(char *currLine, regNode head) {
 		if(outRegNode->status == PHYS) {
 			outPhysReg = outRegNode->physId;
 		}
-		// otherwise, use the first feasible register and spill the value after
+		// otherwise, use the second feasible register and spill the value after
 		// the operation.
 		else{
-			outPhysReg = 1;
+			outPhysReg = 2;
 		}
 		fprintf(stdout, "load r%d => r%d\n", inPhysReg, outPhysReg);
 		if(outRegNode->status == MEM) {
@@ -580,9 +576,10 @@ void opSimpleTD(char *currLine, regNode head) {
 		uint inReg1 = nextNum(currLine, &currIndex);
 		uint inReg2 = nextNum(currLine, &currIndex);
 		uint outReg = nextNum(currLine, &currIndex);
-		uint inPhysReg1 = 999; // initializing to 999 for checking if it's used yet
+		uint inPhysReg1;
 		uint inPhysReg2;
 		uint outPhysReg;
+		int f1Used = 0;
 		regNode inRegNode1 = getRegNode(inReg1, head);
 		regNode inRegNode2 = getRegNode(inReg2, head);
 		regNode outRegNode = getRegNode(outReg, head);
@@ -594,6 +591,7 @@ void opSimpleTD(char *currLine, regNode head) {
 		else{
 			inPhysReg1 = 1;
 			fetchReg(inReg1, inPhysReg1, head);
+			f1Used = 1;
 		}
 		// if the second input equals the first input, use inPhysReg1 for inPhysReg2.
 		if(inReg2 == inReg1){
@@ -608,7 +606,7 @@ void opSimpleTD(char *currLine, regNode head) {
 			// otherwise, fetch it into one of the feasible registers
 			else{
 				// If first feasible register isn't used, use that.
-				if(inPhysReg1 == 999) {
+				if(f1Used != 1) {
 					inPhysReg2 = 1;
 				}
 				// Otherwise, use second feasible register.
