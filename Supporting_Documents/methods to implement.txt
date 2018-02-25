@@ -1,7 +1,48 @@
 Sunday: Part 2
 
-Complex top-down allocation looks tough, but it's actually not too bad if we consider
-making a new struct. Particularly, an "instructionNode". 
+For lecture top-down allocation, we first start by determining if we even need
+feasible registers. Just like simple, if num_phys >= num_virtual, we just give
+everything a physical register and don't worry about it.
 
-In lecture-taught top-down allocation, we only spill registers during each instruction
-that has a greater number of live registers than allocatable registers... read more tomorrow. Tired.
+However, if num_phys < num_virtual, we will need two feasible registers. At that
+point, allocation occurs line to line, and carries over from there.
+
+We give the following information to the function per line:
+- Current line
+- Instruction number (starting at 0)
+- head of regNode list
+- sorted array of regNodes, sorted by number of occurrences, and THEN live range
+- list of currently-live registers, represented by intNodes
+- number of allocatable physical registers (should be set to number of physical registers
+total if num_phys >= num_virtual)
+
+This means that we need the following functions:
+
+0) Update genRegList() to initialize firstInstr and lastInstr with the first
+and last instructions the register is live for.
+
+1) int descCompLive(const void *in1, const void *in2): same comparator function to
+descComp(), but in the case where number of occurrences is equal, we compare the
+live ranges of each. The length of the live range is the tie-breaker: take the difference
+of the first and last occurrence in each list. If the first input has a shorter live range,
+return -1; if they're equal, return 0; if the first has a longer live range, return 1.
+
+2) void trackLiveRegs(int instr, regNode regHead, intNode idHead): updates idHead, which is a
+linked list of intNodes containing the ID's of registers that are live (excluding r0). 
+
+
+2) void topDownLecture(); 
+	- Does the same heavy work that opSimpleTD() does, but keeps track of the current instruction
+	number, the live registers at a point in time (besides r0), etc.
+	- Passes more work to opLectureTD().
+
+3) void opLectureTD(); opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
+	int allocRegs)
+	- Takes the current line, head of the regNode list, the number of the current instruction, the
+	array of regNodes sorted with the lecture heuristic, the linked list of live registers at this
+	point in time (ignore r0), and the number of allocatable registers (max number if we have enough
+	not to use feasible).
+
+	- First, parse the current line by operation and whatnot, just like usual.
+	- Call trackLiveRegs() to update the list of currently-live registers, at each instruction.
+	- 

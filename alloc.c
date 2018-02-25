@@ -263,6 +263,25 @@ regNode genRegList(FILE *file) {
 		free(currLine);
 		currLine = NULL;
 	}
+	// For each regNode, update its liveStart and liveEnd members.
+	currNode = firstNode;
+	// Go through each regNode.
+	while(currNode != NULL) {
+		// For each regNode, record the first and last occurrence.
+		int currFirstOcc = 9001;
+		int currLastOcc = 9001;
+		intNode currOcc = currNode->firstOcc;
+		currFirstOcc = currOcc->val;
+		while(currOcc->next != NULL) {
+			currOcc = currOcc->next;
+		}
+		currLastOcc = currOcc->val;
+		// set beginning of live range to first occurrence
+		currNode->firstInstr = currFirstOcc;
+		// note: live range ends 1 instruction before last occurrence, 
+		currNode->lastInstr = currLastOcc;
+		currNode = currNode->next;
+	}
 	// Be kind: Rewind (the file pointer)!
 	rewind(file);
 	return firstNode;
@@ -495,14 +514,11 @@ void topDownSimple(int numRegisters, FILE *file) {
 	char *currLine = NULL;
 	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
 	// the line and provide the according output.
-	int currInstr = 0;
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
 			// perform the operation(s) for this line
 			opSimpleTD(currLine, head);
-			// increment the current instruction
-			currInstr += 1;
 		}
 		// free the current line's memory, and set the pointer to null
 		free(currLine);
@@ -715,6 +731,15 @@ void opSimpleTD(char *currLine, regNode head) {
 
 /* Top-down allocation (lecture) support functions defined here. */
 
+void topDownLecture(int numRegs, FILE *file) {
+	return;
+}
+
+void opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
+	int allocRegs) {
+
+}
+
 /* Bottom-up allocation support functions defined here. */
 
 
@@ -757,8 +782,7 @@ int main(int argc, char *argv[]) {
 		topDownSimple(numRegs, file);
 	}
 	else if(typeOp == 't') {
-		printf("Requested complex top-down allocator. Not currently implemented.\n");
-		return 0;
+		topDownLecture(numRegs, file);
 	}
 	else if(typeOp == 'b') {
 		printf("Requested bottom-down allocator. Not currently implemented.\n");

@@ -80,6 +80,10 @@ typedef struct registerNode {
 	int offset;
 	// the next regNode in the linked list. NULL by default.
 	struct registerNode *next;
+	// the first instruction this register is live (present) in
+	int firstInstr;
+	// the last instruction this register is live in 
+	int lastInstr;
 } *regNode;
 
 
@@ -159,16 +163,12 @@ that its value will be stored in, and the head of the regNode list. Also changes
 register's status and location members accordingly (physId set to 999, default). */
 void fetchReg(uint targetId, uint feasId, regNode head);
 
-/* Compares the two regNodes such that a qsort()'ed list will be set in descending order
-of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the same,
-1 if n1 has fewer occurrences than n2. */
-int descComp(const void *in1, const void *in2);
-
 /* Given a linked list of regNodes, returns a dynamically-allocated array with the regNodes 
 sorted in descending order of number of occurrences (besides r0). This means that for
 x virtual registers including r0, the length of the array will be x, with ret[x] == NULL. 
 Note that the array returned from here must be freed.*/
 regNode *sortedRegArr(regNode head);
+
 
 /* Simple top-down exclusive functions below. */
 
@@ -180,7 +180,31 @@ void topDownSimple(int numRegisters, FILE *file);
 This includes spilling, fetching, and standard output. */
 void opSimpleTD(char *currLine, regNode head);
 
+/* Compares the two regNodes such that a qsort()'ed list will be set in descending order
+of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the same,
+1 if n1 has fewer occurrences than n2. */
+int descComp(const void *in1, const void *in2);
+
+
 /* Lecture top-down exclusive functions below. */
+
+/* Performs the top-down allocation from lecture. Only the number of physical registers
+and the file pointer. Output is given to stdout. 
+
+Takes each line of input, the regNode list from the file, keeps track of the current instruction, 
+passes a sorted array of registers by the lecture heuristic, and keeps track of which virtual registers are
+live. Modifies the list of liveRegs accordingly, and the status/location properties of the regNodes linked
+to input head. */
+void topDownLecture(int numRegs, FILE *file);
+
+/* Performs the actual operations for lecture top-down allocation. This includes:
+
+1. Parsing the input for operation type/virtual register ID's, just like simple top-down.
+2. Determining which operations are live at this line, and which aren't. 
+
+*/
+void opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
+	int allocRegs);
 
 
 /* Bottom-up exclusive functions below. */
