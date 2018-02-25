@@ -580,11 +580,66 @@ void opSimpleTD(char *currLine, regNode head) {
 		uint inReg1 = nextNum(currLine, &currIndex);
 		uint inReg2 = nextNum(currLine, &currIndex);
 		uint outReg = nextNum(currLine, &currIndex);
+		uint inPhysReg1 = 999; // initializing to 999 for checking if it's used yet
+		uint inPhysReg2;
+		uint outPhysReg;
+		regNode inRegNode1 = getRegNode(inReg1, head);
+		regNode inRegNode2 = getRegNode(inReg2, head);
+		regNode outRegNode = getRegNode(outReg, head);
+		// if the first input is already allocated, use that.
+		if(inRegNode1->status == PHYS) {
+			inPhysReg1 = inRegNode1->physId;
+		}
+		// otherwise, use the first feasible register and fetch the value into that.
+		else{
+			inPhysReg1 = 1;
+			fetchReg(inReg1, inPhysReg1, head);
+		}
+		// if the second input equals the first input, use inPhysReg1 for inPhysReg2.
+		if(inReg2 == inReg1){
+			inPhysReg2 = inPhysReg1;
+		}
+		// otherwise, same drill as before.
+		else {
+			// use the second input's physical register as applicable
+			if(inRegNode2->status == PHYS) {
+				inPhysReg2 = inRegNode2->physId;
+			}
+			// otherwise, fetch it into one of the feasible registers
+			else{
+				// If first feasible register isn't used, use that.
+				if(inPhysReg1 == 999) {
+					inPhysReg2 = 1;
+				}
+				// Otherwise, use second feasible register.
+				else{
+					inPhysReg2 = 2;
+				}
+				fetchReg(inReg2, inPhysReg2, head);
+			}
+		}
+		// output register: if it has a physical register, use that.
+		if(outRegNode->status == PHYS) {
+			outPhysReg = outRegNode->physId;
+		}
+		// otherwise, use the first feasible register for output.
+		else {
+			outPhysReg = 1;
+		}
+		// print out the message given that we know the registers now.
+		fprintf(stdout, "%s r%d, r%d => r%d\n", opString, inPhysReg1, inPhysReg2, outPhysReg);
+		// if the output is in memory, spill the output register to there.
+		if(outRegNode->status == MEM) {
+			spillReg(outReg, outPhysReg, head);
+		}
+
 	}
 	else if(strcmp(opString, "output") == 0) {
 		// output 1028
 		// value would be a constant.
 		int constant = nextNum(currLine, &currIndex);
+		// pretty straightforward. just print the message right here.
+		fprintf(stdout, "output %d\n", constant);
 	}
 	else{
 		printf("ERROR! No valid operation provided.\n");
@@ -606,8 +661,25 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// Get the number of allocatable registers (if any) by subtracting 2 (for the feasible
 	// registers) from numRegisters.
 	int availableRegs = numRegisters - 2;
-	// Start allocating physical registers at r3.
-	uint currId = 3; 
+	// Start allocating physical registers at either r1 (number of physical registers >=
+	// number of virtual registers, r2 (number of physical registers is 1 less than number
+	// of physical registers), or r3.
+	uint currId;
+	int length = 0;
+	regNode currNode = sortedRegs[0];
+	while(currNode != NULL) {
+		length += 1;
+		currNode = sortedRegs[length];
+	}
+	if(numRegisters >= length) {
+		currId = 1;
+	}
+	else if(numRegisters == length - 1) {
+		currId = 2;
+	}
+	else{
+		currId = 3;
+	}
 	uint index = 0;
 	regNode currReg = sortedRegs[0];
 	// Allocate as many physical registers as we have available for such, until we
