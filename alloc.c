@@ -443,8 +443,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// registers) from numRegisters.
 	int availableRegs = numRegisters - 2;
 	// Start allocating physical registers at either r1 (number of physical registers >=
-	// number of virtual registers, r2 (number of physical registers is 1 less than number
-	// of physical registers), or r3.
+	// number of virtual registers, or r3 (2 feasible registers).
 	uint currId;
 	int length = 0;
 	regNode currNode = sortedRegs[0];
@@ -454,9 +453,6 @@ void topDownSimple(int numRegisters, FILE *file) {
 	}
 	if(numRegisters >= length) {
 		currId = 1;
-	}
-	else if(numRegisters == length - 1) {
-		currId = 2;
 	}
 	else{
 		currId = 3;
