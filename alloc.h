@@ -188,6 +188,13 @@ int descComp(const void *in1, const void *in2);
 
 /* Lecture top-down exclusive functions below. */
 
+/* Compares the two regNodes such that a qsort()'ed list will be set in descending order
+of occurrences. Returns -1 if n1 has more occurrences than n2, 1 if n1 has fewer occurrences 
+than n2. If number of occurrences between n1 and n2 is matched, use the length of the live
+range as a tie-breaker. If n1 has a shorter live range than n2, return -1. If n1 has a
+longer live range than n2, return 1. If they have the same live range, return 0.*/
+int descComp(const void *in1, const void *in2);
+
 /* Performs the top-down allocation from lecture. Only the number of physical registers
 and the file pointer. Output is given to stdout. 
 
