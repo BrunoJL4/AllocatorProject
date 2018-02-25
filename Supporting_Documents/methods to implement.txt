@@ -29,6 +29,7 @@ return -1; if they're equal, return 0; if the first has a longer live range, ret
 
 2) void trackLiveRegs(int instr, regNode regHead, intNode idHead): updates idHead, which is a
 linked list of intNodes containing the ID's of registers that are live (excluding r0). 
+excludes any registers that have already been spilled (status equals MEM).
 
 
 2) void topDownLecture(); 

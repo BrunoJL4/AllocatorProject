@@ -286,6 +286,8 @@ void printRegNode(regNode node) {
 	printf("\n");
 	printf("physical ID (if applicable): %d\n", node->physId);
 	printf("offset in memory (if applicable): %d\n", node->offset);
+	printf("first instruction: %d\n", node->firstInstr);
+	printf("last instruction: %d\n", node->lastInstr);
 	return;
 }
 
@@ -715,6 +717,60 @@ void opSimpleTD(char *currLine, regNode head) {
 
 /* Top-down allocation (lecture) support functions defined here. */
 
+void trackLiveRegs(int instr, regNode regHead, intNode idHead) {
+	// first, add any registers from the linked list for whom firstInstr <= instr < lastInstr,
+	// AND for whom status != MEM.
+	regNode currReg = regHead;
+	// start iterating through the regNode list.
+	while(currReg != NULL) {
+		// do nothing if the register is already spilled, or if the instruction is out of bounds for
+		// this register (less than first instr, or greater than/equal to last instruction), or if
+		// the register is r0
+		if(currReg->status == MEM || instr >= currReg->lastInstr || instr < currReg->firstInstr || currReg->id == 0) {
+			continue;
+		}
+		else {
+			// check if this node's ID is already in the list. if it is, skip over it. otherwise, add it in.
+			int id = currReg->id;
+			if(!intNodeExists(currReg->id, idHead)) {
+			intNode newNode = createIntNode(id);
+			intNode currInt = idHead;
+			// if this is the first register to show (not r0), 
+			if(currInt == NULL) {
+				currInt = newNode;
+			}
+			else {
+				while(currInt->next != NULL) {
+				currInt = currInt->next;
+				}
+			}
+			currInt->next = newNode;
+			}
+			currReg = currReg->next;
+		}
+	}
+	// then, remove any registers from the list for whom lastInstr == instr. delink
+	// and free each applicable node.   1; 1 2; 1 2 3 4
+	// First case: if intHead is NULL, just return.
+	if(intHead == NULL) {
+		return;
+	}
+	// Second case: if head is the only node in the list, don't traverse it. either return as-is,
+	// or free it and set it to NULL if it's on its last instruction
+	else if(intHead->next == NULL) {
+		free(regHead);
+		regHead = NULL;
+		return;
+	}
+	intNode currInt = intHead;
+	intNodeNode prevReg, nextReg;
+	while(currInt != NULL) {
+
+	}
+	// return.
+	return;
+}
+
 int descCompLive(const void *in1, const void *in2) {
 	// cast the inputs to regNodes
 	regNode n1 = *((regNode *) in1);
@@ -760,11 +816,16 @@ int descCompLive(const void *in1, const void *in2) {
 }
 
 void topDownLecture(int numRegs, FILE *file) {
+	regNode head = genRegList(file);
+	printRegList(head);
+
+	freeRegNode(head);
 	return;
 }
 
 void opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
 	int allocRegs) {
+	return;
 
 }
 
