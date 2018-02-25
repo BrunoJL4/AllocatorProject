@@ -427,30 +427,100 @@ regNode *sortedRegArr(regNode head) {
 	int i;
 	for(i = 0; i < listLength-1; i++) {
 		retArr[i] = midArr[i];
-	}
-	
-	/*
-	// debugging: print contents of retArr:
-	printf("printing contents of retArr: \n");
-	for(i = 0; i < listLength; i++) {
-		// obtain number of occurrences
-		if(retArr[i] != NULL) {
-			printf("register id: %d\n", retArr[i]->id);
-			intNode currOcc = retArr[i]->firstOcc;
-			int len = 0;
-			while(currOcc != NULL) {
-				len += 1;
-				currOcc = currOcc->next;
-			}
-			printf("number of occs: %d\n\n", len);
-		}
-		else {
-			printf("retArr[%d] is NULL!\n", i);
-		}
-	}
-	*/
-	
+	}	
 	return retArr;
+}
+
+/* Top-down allocation (simple) support functions defined here. */
+
+void topDownSimple(int numRegisters, FILE *file) {
+	// First, obtain the linked list of regNodes from the file.
+	regNode head = genRegList(file);
+	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
+	// descending order of occurrences.
+	regNode *sortedRegs = sortedRegArr(head);
+	// Get the number of allocatable registers (if any) by subtracting 2 (for the feasible
+	// registers) from numRegisters.
+	int availableRegs = numRegisters - 2;
+	// Start allocating physical registers at either r1 (number of physical registers >=
+	// number of virtual registers, r2 (number of physical registers is 1 less than number
+	// of physical registers), or r3.
+	uint currId;
+	int length = 0;
+	regNode currNode = sortedRegs[0];
+	while(currNode != NULL) {
+		length += 1;
+		currNode = sortedRegs[length];
+	}
+	if(numRegisters >= length) {
+		currId = 1;
+	}
+	else if(numRegisters == length - 1) {
+		currId = 2;
+	}
+	else{
+		currId = 3;
+	}
+	uint index = 0;
+	regNode currReg = sortedRegs[0];
+	// Allocate as many physical registers as we have available for such, until we
+	// either run out of physical registers or virtual registers (in sortedRegs).
+	while(availableRegs > 0 && currReg != NULL) {
+		// Give the currId as a physically-allocated space to the next virtual register
+		// in line, and change its status.
+		currReg = sortedRegs[index];
+		currReg->status = PHYS;
+		currReg->physId = currId;
+		index += 1;
+		currId += 1;
+		availableRegs -= 1;
+	}
+	// Start allocating offsets at -4 (as in r0, -4).
+	int currOffset = -4;
+	index = 0;
+	currReg = sortedRegs[0];
+	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
+	// register before.
+	while(currReg != NULL) {
+		if(currReg->status != PHYS) {
+			currReg->status = MEM;
+			currReg->offset = currOffset;
+			currOffset -= 4;
+		}
+		index += 1;
+		currReg = sortedRegs[index];
+	}
+	// Now that the physical registers have been allocated (if any), we provide output
+	// contingent with what we find line-by-line.
+	// Getting started: let's go through the file and perform top-down operations on
+	// every non-blank line.
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
+	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
+	// the line and provide the according output.
+	int currInstr = 0;
+	while(read = getline(&currLine, &len, file) != -1) {
+		// Ignore a blank line or a comment.
+		if(strlen(currLine) != 1 && currLine[0] != '/') {
+			// perform the operation(s) for this line
+			opSimpleTD(currLine, head);
+			// increment the current instruction
+			currInstr += 1;
+		}
+		// free the current line's memory, and set the pointer to null
+		free(currLine);
+		currLine = NULL;
+	}
+	// Be kind: Rewind (the file pointer)!
+	rewind(file);
+
+
+	// free the structs of the regNode list
+	freeRegNode(head);
+	// free the sorted register array (only an array of pointers, not structs):
+	free(sortedRegs);
+	return;
 }
 
 void opSimpleTD(char *currLine, regNode head) {
@@ -645,115 +715,6 @@ void opSimpleTD(char *currLine, regNode head) {
 	}
 }
 
-
-
-
-/* Top-down allocation (simple) support functions defined here. */
-
-void topDownSimple(int numRegisters, FILE *file) {
-	// First, obtain the linked list of regNodes from the file.
-	regNode head = genRegList(file);
-	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
-	// descending order of occurrences.
-	regNode *sortedRegs = sortedRegArr(head);
-	// Get the number of allocatable registers (if any) by subtracting 2 (for the feasible
-	// registers) from numRegisters.
-	int availableRegs = numRegisters - 2;
-	// Start allocating physical registers at either r1 (number of physical registers >=
-	// number of virtual registers, r2 (number of physical registers is 1 less than number
-	// of physical registers), or r3.
-	uint currId;
-	int length = 0;
-	regNode currNode = sortedRegs[0];
-	while(currNode != NULL) {
-		length += 1;
-		currNode = sortedRegs[length];
-	}
-	if(numRegisters >= length) {
-		currId = 1;
-	}
-	else if(numRegisters == length - 1) {
-		currId = 2;
-	}
-	else{
-		currId = 3;
-	}
-	uint index = 0;
-	regNode currReg = sortedRegs[0];
-	// Allocate as many physical registers as we have available for such, until we
-	// either run out of physical registers or virtual registers (in sortedRegs).
-	while(availableRegs > 0 && currReg != NULL) {
-		// Give the currId as a physically-allocated space to the next virtual register
-		// in line, and change its status.
-		currReg = sortedRegs[index];
-		currReg->status = PHYS;
-		currReg->physId = currId;
-		index += 1;
-		currId += 1;
-		availableRegs -= 1;
-	}
-	// Start allocating offsets at -4 (as in r0, -4).
-	int currOffset = -4;
-	index = 0;
-	currReg = sortedRegs[0];
-	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
-	// register before.
-	while(currReg != NULL) {
-		if(currReg->status != PHYS) {
-			currReg->status = MEM;
-			currReg->offset = currOffset;
-			currOffset -= 4;
-		}
-		index += 1;
-		currReg = sortedRegs[index];
-	}
-	/*
-	// debugging: print out the contents of the regNode list itself.
-	printf("printing out all of the registers in the linked list!\n");
-	printRegList(head);
-	printf("\n\n");
-	// debugging: print the contents of sortedRegs.
-	printf("Printing out the sorted register list!\n");
-	currReg = sortedRegs[0];
-	index = 0;
-	while(currReg != NULL) {
-		printRegNode(currReg);
-		printf("\n");
-		index += 1;
-		currReg = sortedRegs[index];
-	} */
-	// Now that the physical registers have been allocated (if any), we provide output
-	// contingent with what we find line-by-line.
-	// Getting started: let's go through the file and perform top-down operations on
-	// every non-blank line.
-	ssize_t read = 0;
-	ssize_t len = 0;
-	char *currLine = NULL;
-	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
-	// the line and provide the according output.
-	int currInstr = 0;
-	while(read = getline(&currLine, &len, file) != -1) {
-		// Ignore a blank line or a comment.
-		if(strlen(currLine) != 1 && currLine[0] != '/') {
-			// perform the operation(s) for this line
-			opSimpleTD(currLine, head);
-			// increment the current instruction
-			currInstr += 1;
-		}
-		// free the current line's memory, and set the pointer to null
-		free(currLine);
-		currLine = NULL;
-	}
-	// Be kind: Rewind (the file pointer)!
-	rewind(file);
-
-
-	// free the structs of the regNode list
-	freeRegNode(head);
-	// free the sorted register array (only an array of pointers, not structs):
-	free(sortedRegs);
-	return;
-}
 
 
 /* Top-down allocation (lecture) support functions defined here. */
