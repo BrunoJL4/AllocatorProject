@@ -368,7 +368,7 @@ void fetchReg(uint targetId, uint physId, regNode head) {
 	return;
 }
 
-regNode *sortedRegArr(regNode head) {
+regNode *sortedRegArr(regNode head, TD_TYPE type) {
 	// First, get the length of the linked list.
 	int listLength = 0;
 	regNode currNode = head;
@@ -390,8 +390,18 @@ regNode *sortedRegArr(regNode head) {
 		}
 		currNode = currNode->next;
 	}
-	// Sort midArr using qsort() and descComp.
-	qsort((void *) midArr, listLength - 1, sizeof(regNode), descComp);
+	if(type == SIMPLE) {
+		// Sort midArr using qsort() and descComp.
+		qsort((void *) midArr, listLength - 1, sizeof(regNode), descComp);
+	}
+	else if(type == LIVE) {
+		// Sort midArr using qsort() and descCompLive.
+		qsort((void *) midArr, listLength - 1, sizeof(regNode), descCompLive);
+	}
+	else{
+		printf("ERROR in sortedRegArr! Invalid flag: %d\n", type);
+		exit(EXIT_FAILURE);
+	}
 	// Transfer midArr to a dynamically-allocated return array.
 	regNode *retArr = (regNode *) malloc(listLength * sizeof(regNode));
 	retArr[listLength-1] = NULL;
@@ -443,38 +453,45 @@ void topDownSimple(int numRegisters, FILE *file) {
 	regNode head = genRegList(file);
 	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
 	// descending order of occurrences.
-	regNode *sortedRegs = sortedRegArr(head);
-	// Get the number of allocatable registers (if any) by subtracting 2 (for the feasible
-	// registers) from numRegisters.
-	int availableRegs = numRegisters - 2;
+	regNode *sortedRegs = sortedRegArr(head, SIMPLE);
 	// Start allocating physical registers at either r1 (number of physical registers >=
 	// number of virtual registers, or r3 (2 feasible registers).
 	uint currId;
 	int length = 0;
+	int availableRegs = 0;
+	// determine how many virtual registers there are.
 	regNode currNode = sortedRegs[0];
 	while(currNode != NULL) {
 		length += 1;
 		currNode = sortedRegs[length];
 	}
+	// if there are enough registers to ignore feasible register requirements, make all
+	// of the registers available.
 	if(numRegisters >= length) {
 		currId = 1;
+		availableRegs = numRegisters;
 	}
+	// otherwise, start allocating at 3, and let k - F registers be available.
 	else{
 		currId = 3;
+		availableRegs = numRegisters - 2;
 	}
 	uint index = 0;
-	regNode currReg = sortedRegs[0];
+	regNode currReg;
 	// Allocate as many physical registers as we have available for such, until we
 	// either run out of physical registers or virtual registers (in sortedRegs).
-	while(availableRegs > 0 && currReg != NULL) {
+	while(availableRegs > 0 && sortedRegs[index] != NULL) {
 		// Give the currId as a physically-allocated space to the next virtual register
-		// in line, and change its status.
-		currReg = sortedRegs[index];
-		currReg->status = PHYS;
-		currReg->physId = currId;
+		// in line, and change its status, unless it's r0. Otherwise we just continue
+		// as usual.
+		if(currReg->id != 0) {
+			currReg = sortedRegs[index];
+			currReg->status = PHYS;
+			currReg->physId = currId;
+			availableRegs -= 1;
+			currId += 1;
+		}
 		index += 1;
-		currId += 1;
-		availableRegs -= 1;
 	}
 	// Start allocating offsets at -4 (as in r0, -4).
 	int currOffset = -4;
@@ -715,13 +732,12 @@ void opSimpleTD(char *currLine, regNode head) {
 
 
 
-/* Top-down allocation (lecture) support functions defined here. */
+/* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
-void trackLiveRegs(int instr, regNode regHead, intNode idHead) {
-	// first, add any registers from the linked list for whom firstInstr <= instr < lastInstr,
-	// AND for whom status != MEM.
+void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr) {
+	intNode idHead = *idHeadPtr;
 	regNode currReg = regHead;
-	// start iterating through the regNode list.
+	// start iterating through the main regNode list.
 	while(currReg != NULL) {
 		// do nothing if the register is already spilled, or if the instruction is out of bounds for
 		// this register (less than first instr, or greater than/equal to last instruction), or if
@@ -729,45 +745,62 @@ void trackLiveRegs(int instr, regNode regHead, intNode idHead) {
 		if(currReg->status == MEM || instr >= currReg->lastInstr || instr < currReg->firstInstr || currReg->id == 0) {
 			continue;
 		}
+		// first, add any registers from the linked list for whom the current instruction is in range
+		// AND whose status != MEM. this means it's live.
 		else {
 			// check if this node's ID is already in the list. if it is, skip over it. otherwise, add it in.
 			int id = currReg->id;
 			if(!intNodeExists(currReg->id, idHead)) {
-			intNode newNode = createIntNode(id);
-			intNode currInt = idHead;
-			// if this is the first register to show (not r0), 
-			if(currInt == NULL) {
-				currInt = newNode;
-			}
-			else {
-				while(currInt->next != NULL) {
-				currInt = currInt->next;
+				intNode newNode = createIntNode(id);
+				intNode currInt = idHead;
+				// if this is the first register to show (not r0), change what's pointed to
+				// by idHeadPtr to be this new node.
+				if(currInt == NULL) {
+					*(idHeadPtr) = newNode;
 				}
-			}
-			currInt->next = newNode;
+				// otherwise, insert the new node at the end of the ID list.
+				else {
+					while(currInt->next != NULL) {
+						currInt = currInt->next;
+					}
+					currInt->next = newNode;
+				}
 			}
 			currReg = currReg->next;
 		}
 	}
 	// then, remove any registers from the list for whom lastInstr == instr. delink
-	// and free each applicable node.   1; 1 2; 1 2 3 4
-	// First case: if intHead is NULL, just return.
-	if(intHead == NULL) {
-		return;
-	}
-	// Second case: if head is the only node in the list, don't traverse it. either return as-is,
-	// or free it and set it to NULL if it's on its last instruction
-	else if(intHead->next == NULL) {
-		free(regHead);
-		regHead = NULL;
-		return;
-	}
-	intNode currInt = intHead;
-	intNodeNode prevReg, nextReg;
+	// and free each applicable node. this is essentially a continuous deletion.
+	intNode prevInt = NULL;
+	intNode currInt = idHead;
 	while(currInt != NULL) {
-
+		// if the current node is no longer live
+		if(currInt->val >= instr) {
+			// case 1: currently at head
+			if(prevInt == NULL) {
+				// set prevInt to currInt (keep track of pointer)
+				prevInt = currInt;
+				// set currInt to its next node
+				currInt = currInt->next;
+				// set the pointer's head to where currInt is
+				*(idHeadPtr) = currInt;
+				// free previous currInt, re-initialie prevInt to NULL
+				free(prevInt);
+				prevInt = NULL;
+			}
+			// case 2: currently preceded by a node (not head)
+			else{
+				// delink the current node
+				prevInt->next = currInt->next;
+				// free it, then set it to the next node
+				free(currInt);
+				currInt = prevInt->next;
+			}
+		}
+		// if we didn't delink/delete anything, iterate accordingly
+		prevInt = currInt;
+		currInt = currInt->next;
 	}
-	// return.
 	return;
 }
 
@@ -815,15 +848,97 @@ int descCompLive(const void *in1, const void *in2) {
 	}
 }
 
-void topDownLecture(int numRegs, FILE *file) {
+void topDownLive(int numRegisters, FILE *file) {
+	// First, obtain the linked list of regNodes from the file.
 	regNode head = genRegList(file);
-	printRegList(head);
+	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
+	// descending order of occurrences.
+	regNode *sortedRegs = sortedRegArr(head, LIVE);
+	// Start allocating physical registers at either r1 (number of physical registers >=
+	// number of virtual registers, or r3 (2 feasible registers).
+	uint currId;
+	int length = 0;
+	int availableRegs = 0;
+	// determine how many virtual registers there are.
+	regNode currNode = sortedRegs[0];
+	while(currNode != NULL) {
+		length += 1;
+		currNode = sortedRegs[length];
+	}
+	// if there are enough registers to ignore feasible register requirements, make all
+	// of the registers available.
+	if(numRegisters >= length) {
+		currId = 1;
+		availableRegs = numRegisters;
+	}
+	// otherwise, start allocating at 3, and let k - F registers be available.
+	else{
+		currId = 3;
+		availableRegs = numRegisters - 2;
+	}
+	uint index = 0;
+	regNode currReg = sortedRegs[0];
+	// Allocate as many physical registers as we have available for such, until we
+	// either run out of physical registers or virtual registers (in sortedRegs).
+	while(availableRegs > 0 && currReg != NULL) {
+		// Give the currId as a physically-allocated space to the next virtual register
+		// in line, and change its status, unless it's r0. Otherwise we just continue
+		// as usual.
+		if(currReg->id != 0) {
+			currReg = sortedRegs[index];
+			currReg->status = PHYS;
+			currReg->physId = currId;
+			availableRegs -= 1;
+			currId += 1;
+		}
+		index += 1;
+	}
+	// Start allocating offsets at -4 (as in r0, -4).
+	int currOffset = -4;
+	index = 0;
+	currReg = sortedRegs[0];
+	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
+	// register before.
+	while(currReg != NULL) {
+		if(currReg->status != PHYS) {
+			currReg->status = MEM;
+			currReg->offset = currOffset;
+			currOffset -= 4;
+		}
+		index += 1;
+		currReg = sortedRegs[index];
+	}
+	// Now that the physical registers have been allocated (if any), we provide output
+	// contingent with what we find line-by-line.
+	// Getting started: let's go through the file and perform top-down operations on
+	// every non-blank line.
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
+	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
+	// the line and provide the according output.
+	while(read = getline(&currLine, &len, file) != -1) {
+		// Ignore a blank line or a comment.
+		if(strlen(currLine) != 1 && currLine[0] != '/') {
+			// perform the operation(s) for this line
+			opSimpleTD(currLine, head);
+		}
+		// free the current line's memory, and set the pointer to null
+		free(currLine);
+		currLine = NULL;
+	}
+	// Be kind: Rewind (the file pointer)!
+	rewind(file);
 
+
+	// free the structs of the regNode list
 	freeRegNode(head);
+	// free the sorted register array (only an array of pointers, not structs):
+	free(sortedRegs);
 	return;
 }
 
-void opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
+void opLiveTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
 	int allocRegs) {
 	return;
 
@@ -871,7 +986,7 @@ int main(int argc, char *argv[]) {
 		topDownSimple(numRegs, file);
 	}
 	else if(typeOp == 't') {
-		topDownLecture(numRegs, file);
+		topDownLive(numRegs, file);
 	}
 	else if(typeOp == 'b') {
 		printf("Requested bottom-down allocator. Not currently implemented.\n");

@@ -46,6 +46,12 @@ typedef enum REG_STATUS_ENUM {
 	NONE = 2
 } REG_STATUS;
 
+/* The enum type for top-down operations- simple or "live-considering". */
+typedef enum TD_TYPE_ENUM {
+	SIMPLE = 0,
+	LIVE = 1
+} TD_TYPE;
+
 /* End enum definitions. */
 
 /* General struct definitions included below. */
@@ -164,10 +170,11 @@ register's status and location members accordingly (physId set to 999, default).
 void fetchReg(uint targetId, uint feasId, regNode head);
 
 /* Given a linked list of regNodes, returns a dynamically-allocated array with the regNodes 
-sorted in descending order of number of occurrences (besides r0). This means that for
+sorted in descending order of number of occurrences (besides r0). Nodes will also be sorted
+by live range as a tie-breaker if the LIVE flag is provided instead of SIMPLE. This means that for
 x virtual registers including r0, the length of the array will be x, with ret[x] == NULL. 
 Note that the array returned from here must be freed.*/
-regNode *sortedRegArr(regNode head);
+regNode *sortedRegArr(regNode head, TD_TYPE type);
 
 
 /* Simple top-down exclusive functions below. */
@@ -193,7 +200,7 @@ of occurrences. Returns -1 if n1 has more occurrences than n2, 1 if n1 has fewer
 than n2. If number of occurrences between n1 and n2 is matched, use the length of the live
 range as a tie-breaker. If n1 has a shorter live range than n2, return -1. If n1 has a
 longer live range than n2, return 1. If they have the same live range, return 0.*/
-int descComp(const void *in1, const void *in2);
+int descCompLive(const void *in1, const void *in2);
 
 /* Keeps track of the registers that are live at the given instruction (the instruction falls within
 the live range). This will exclude instructions that are at a register's last instruction, as registers
@@ -205,9 +212,10 @@ Deletes any registers from the list whose lastInstr == instr.
 Excludes r0.
 Excludes any registers that are already spilled into memory, such that regNode->status == MEM.
 This information would be useless. registers of status NONE and PHYS are not yet spilled
-and are thus considered "live".
+and are thus considered "live". The head of the list is passed in by reference so that we can
+change it accordingly within the function (particularly if it's NULL).
 */
-void trackLiveRegs(int instr, regNode regHead, intNode idHead);
+void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr);
 
 /* Performs the top-down allocation from lecture. Only the number of physical registers
 and the file pointer. Output is given to stdout. 
@@ -216,7 +224,7 @@ Takes each line of input, the regNode list from the file, keeps track of the cur
 passes a sorted array of registers by the lecture heuristic, and keeps track of which virtual registers are
 live. Modifies the list of liveRegs accordingly, and the status/location properties of the regNodes linked
 to input head. */
-void topDownLecture(int numRegs, FILE *file);
+void topDownLive(int numRegs, FILE *file);
 
 /* Performs the actual operations for lecture top-down allocation. This includes:
 
@@ -224,7 +232,7 @@ void topDownLecture(int numRegs, FILE *file);
 2. Determining which operations are live at this line, and which aren't. 
 
 */
-void opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
+void opLiveTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
 	int allocRegs);
 
 

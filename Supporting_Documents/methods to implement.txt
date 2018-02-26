@@ -27,7 +27,7 @@ live ranges of each. The length of the live range is the tie-breaker: take the d
 of the first and last occurrence in each list. If the first input has a shorter live range,
 return -1; if they're equal, return 0; if the first has a longer live range, return 1.
 
-2) void trackLiveRegs(int instr, regNode regHead, intNode idHead): updates idHead, which is a
+2) void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr): updates *(idHeadPtr), which is a
 linked list of intNodes containing the ID's of registers that are live (excluding r0). 
 excludes any registers that have already been spilled (status equals MEM).
 
