@@ -459,11 +459,15 @@ void topDownSimple(int numRegisters, FILE *file) {
 	uint currId;
 	int length = 0;
 	int availableRegs = 0;
-	// determine how many virtual registers there are.
+	int index = 0;
+	// determine how many virtual registers there are. ignore r0!
 	regNode currNode = sortedRegs[0];
 	while(currNode != NULL) {
-		length += 1;
-		currNode = sortedRegs[length];
+		if(currNode->id != 0) {
+			length += 1;
+		}
+		index += 1;
+		currNode = sortedRegs[index];
 	}
 	// if there are enough registers to ignore feasible register requirements, make all
 	// of the registers available.
@@ -476,7 +480,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 		currId = 3;
 		availableRegs = numRegisters - 2;
 	}
-	uint index = 0;
+	index = 0;
 	regNode currReg;
 	// Allocate as many physical registers as we have available for such, until we
 	// either run out of physical registers or virtual registers (in sortedRegs).
@@ -854,62 +858,11 @@ void topDownLive(int numRegisters, FILE *file) {
 	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
 	// descending order of occurrences.
 	regNode *sortedRegs = sortedRegArr(head, LIVE);
-	// Start allocating physical registers at either r1 (number of physical registers >=
-	// number of virtual registers, or r3 (2 feasible registers).
-	uint currId;
-	int length = 0;
-	int availableRegs = 0;
-	// determine how many virtual registers there are.
-	regNode currNode = sortedRegs[0];
-	while(currNode != NULL) {
-		length += 1;
-		currNode = sortedRegs[length];
-	}
-	// if there are enough registers to ignore feasible register requirements, make all
-	// of the registers available.
-	if(numRegisters >= length) {
-		currId = 1;
-		availableRegs = numRegisters;
-	}
-	// otherwise, start allocating at 3, and let k - F registers be available.
-	else{
-		currId = 3;
-		availableRegs = numRegisters - 2;
-	}
-	uint index = 0;
-	regNode currReg = sortedRegs[0];
-	// Allocate as many physical registers as we have available for such, until we
-	// either run out of physical registers or virtual registers (in sortedRegs).
-	while(availableRegs > 0 && currReg != NULL) {
-		// Give the currId as a physically-allocated space to the next virtual register
-		// in line, and change its status, unless it's r0. Otherwise we just continue
-		// as usual.
-		if(currReg->id != 0) {
-			currReg = sortedRegs[index];
-			currReg->status = PHYS;
-			currReg->physId = currId;
-			availableRegs -= 1;
-			currId += 1;
-		}
-		index += 1;
-	}
-	// Start allocating offsets at -4 (as in r0, -4).
-	int currOffset = -4;
-	index = 0;
-	currReg = sortedRegs[0];
-	// Allocate offsets and set statuses for regNodes who didn't get a physically-allocated
-	// register before.
-	while(currReg != NULL) {
-		if(currReg->status != PHYS) {
-			currReg->status = MEM;
-			currReg->offset = currOffset;
-			currOffset -= 4;
-		}
-		index += 1;
-		currReg = sortedRegs[index];
-	}
-	// Now that the physical registers have been allocated (if any), we provide output
-	// contingent with what we find line-by-line.
+	// allocation for this version of top-down needs to be done at the beginning. check
+	// the methods to implement document for more info.
+
+
+	// SKELETON BELOW FOR INPUT! Do NOT use as-is, modify accordingly given how we allocate physical registers.
 	// Getting started: let's go through the file and perform top-down operations on
 	// every non-blank line.
 	ssize_t read = 0;

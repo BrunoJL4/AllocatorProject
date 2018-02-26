@@ -1,49 +1,20 @@
-Sunday: Part 2
+Monday: Part 2
 
-For lecture top-down allocation, we first start by determining if we even need
-feasible registers. Just like simple, if num_phys >= num_virtual, we just give
-everything a physical register and don't worry about it.
+Top-down allocation for this part isn't so hard. 
 
-However, if num_phys < num_virtual, we will need two feasible registers. At that
-point, allocation occurs line to line, and carries over from there.
+We also do it at the very beginning. Just like before, if we have enough (or more than enough) physical
+registers, we just assign them to the virtual registers (minus r0) like before.
 
-We give the following information to the function per line:
-- Current line
-- Instruction number (starting at 0)
-- head of regNode list
-- sorted array of regNodes, sorted by number of occurrences, and THEN live range
-- list of currently-live registers, represented by intNodes
-- number of allocatable physical registers (should be set to number of physical registers
-total if num_phys >= num_virtual)
+Otherwise, go through line-by-line and keep track of which registers are live at the time, and so on, using
+trackLiveRegs(). At each line, we see if MAXLIVE is greater than the number of allocatable registers. If it
+is, we see how many registers we need to spill here. Once we've determined that, we see how many registers
+are exempt in the sorted list (num_live - num_to_spill). We go through the list and, for each that matches
+one of the registers in the live-list, we check off one exempt register. Once we've traversed the given number
+of exempt registers, we take the next num_to_spill registers we find are in the live-list, and give them a
+decreasing offset (starting at -4) and set their status to MEM. We can trust trackLiveRegs() to 
+remove the to-be-spilled ones on the next iteration and not add them back in.
 
-This means that we need the following functions:
+We end allocation by rewinding the file pointer.
 
-0) Update genRegList() to initialize firstInstr and lastInstr with the first
-and last instructions the register is live for.
-
-1) int descCompLive(const void *in1, const void *in2): same comparator function to
-descComp(), but in the case where number of occurrences is equal, we compare the
-live ranges of each. The length of the live range is the tie-breaker: take the difference
-of the first and last occurrence in each list. If the first input has a shorter live range,
-return -1; if they're equal, return 0; if the first has a longer live range, return 1.
-
-2) void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr): updates *(idHeadPtr), which is a
-linked list of intNodes containing the ID's of registers that are live (excluding r0). 
-excludes any registers that have already been spilled (status equals MEM).
-
-
-2) void topDownLecture(); 
-	- Does the same heavy work that opSimpleTD() does, but keeps track of the current instruction
-	number, the live registers at a point in time (besides r0), etc.
-	- Passes more work to opLectureTD().
-
-3) void opLectureTD(); opLectureTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
-	int allocRegs)
-	- Takes the current line, head of the regNode list, the number of the current instruction, the
-	array of regNodes sorted with the lecture heuristic, the linked list of live registers at this
-	point in time (ignore r0), and the number of allocatable registers (max number if we have enough
-	not to use feasible).
-
-	- First, parse the current line by operation and whatnot, just like usual.
-	- Call trackLiveRegs() to update the list of currently-live registers, at each instruction.
-	- 
+Then we just go through again, line-by-line, and call opSimpleTd() like before, since we've determined
+which registers need to be spilled. This should conclude it.
