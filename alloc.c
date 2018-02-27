@@ -794,9 +794,9 @@ void topDownLive(int numRegisters, FILE *file) {
 	// SKELETON BELOW FOR INPUT! Do NOT use as-is, modify accordingly given how we allocate physical registers.
 	// Getting started: let's go through the file and perform top-down operations on
 	// every non-blank line.
-	read = 0;
-	len = 0;
-	currLine = NULL;
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
 	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
 	// the line and provide the according output.
 	while(read = getline(&currLine, &len, file) != -1) {
