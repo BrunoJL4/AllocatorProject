@@ -195,12 +195,13 @@ int descComp(const void *in1, const void *in2);
 
 /* Lecture top-down exclusive functions below. */
 
-/* Compares the two regNodes such that a qsort()'ed list will be set in descending order
-of occurrences. Returns -1 if n1 has more occurrences than n2, 1 if n1 has fewer occurrences 
-than n2. If number of occurrences between n1 and n2 is matched, use the length of the live
-range as a tie-breaker. If n1 has a shorter live range than n2, return -1. If n1 has a
-longer live range than n2, return 1. If they have the same live range, return 0.*/
-int descCompLive(const void *in1, const void *in2);
+/* Compares the two regNodes such that a qsort()'ed list will be set in ascending order
+of number of occurrences. Live range will be used as a tie-breaker- the longer live range
+will go earlier in the list.
+
+This is used in the lecture top-down allocation, because we choose to evict registers in such
+an order.*/
+int ascCompLive(const void *in1, const void *in2);
 
 /* Keeps track of the registers that are live at the given instruction (the instruction falls within
 the live range). This will exclude instructions that are at a register's last instruction, as registers

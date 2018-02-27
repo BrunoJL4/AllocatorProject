@@ -752,7 +752,7 @@ void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr) {
 		// first, add any registers from the linked list for whom the current instruction is in range
 		// AND whose status != MEM. this means it's live.
 		else {
-			// check if this node's ID is already in the list. if it is, skip over it. otherwise, add it in.
+			// check if this node's ID is already in the list. if it isn't, add it in.
 			int id = currReg->id;
 			if(!intNodeExists(currReg->id, idHead)) {
 				intNode newNode = createIntNode(id);
@@ -770,8 +770,8 @@ void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr) {
 					currInt->next = newNode;
 				}
 			}
-			currReg = currReg->next;
 		}
+		currReg = currReg->next;
 	}
 	// then, remove any registers from the list for whom lastInstr == instr. delink
 	// and free each applicable node. this is essentially a continuous deletion.
@@ -808,7 +808,7 @@ void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr) {
 	return;
 }
 
-int descCompLive(const void *in1, const void *in2) {
+int ascCompLive(const void *in1, const void *in2) {
 	// cast the inputs to regNodes
 	regNode n1 = *((regNode *) in1);
 	regNode n2 = *((regNode *) in2);
@@ -825,20 +825,20 @@ int descCompLive(const void *in1, const void *in2) {
 		n2Count += 1;
 		currNode = currNode->next;
 	}
-	// return -1 if first register has more occs than second
-	if(n1Count > n2Count) {
+	// return -1 if first register has fewer occs than second
+	if(n1Count < n2Count) {
 		return -1;
 	}
 	// tie-break on live range if same number of occs
 	else if(n1Count == n2Count) {
 		int n1LiveRange = n1->lastInstr - n1->firstInstr;
 		int n2LiveRange = n2->lastInstr - n2->firstInstr;
-		// if n1 has shorter live range, it comes first.
-		if(n1LiveRange < n2LiveRange) {
+		// if n1 has longer live range, it comes first.
+		if(n1LiveRange > n2LiveRange) {
 			return -1;
 		}
-		// if n1 has longer live range, it comes after.
-		else if(n1LiveRange > n2LiveRange) {
+		// if n1 has shorter live range, it comes after.
+		else if(n1LiveRange < n2LiveRange) {
 			return 1;
 		}
 		// if n1 and n2 have same live range, they're tied.
@@ -846,7 +846,7 @@ int descCompLive(const void *in1, const void *in2) {
 			return 0;
 		}
 	}
-	// return 1 if first register has fewer occs than second
+	// return 1 if first register has more occs than second
 	else {
 		return 1;
 	}
@@ -856,18 +856,89 @@ void topDownLive(int numRegisters, FILE *file) {
 	// First, obtain the linked list of regNodes from the file.
 	regNode head = genRegList(file);
 	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
-	// descending order of occurrences.
+	// ascending order of occurrences.
 	regNode *sortedRegs = sortedRegArr(head, LIVE);
-	// allocation for this version of top-down needs to be done at the beginning. check
-	// the methods to implement document for more info.
-
+	// Start allocating physical registers at either r1 (number of physical registers >=
+	// number of virtual registers, or r3 (2 feasible registers).
+	uint currId;
+	int length = 0;
+	int availableRegs = 0;
+	int index = 0;
+	// determine how many virtual registers there are. ignore r0!
+	regNode currNode = sortedRegs[0];
+	while(currNode != NULL) {
+		if(currNode->id != 0) {
+			length += 1;
+		}
+		index += 1;
+		currNode = sortedRegs[index];
+	}
+	// if there are enough registers to ignore feasible register requirements, make all
+	// of the registers available.
+	if(numRegisters >= length) {
+		currId = 1;
+		availableRegs = numRegisters;
+	}
+	// otherwise, start allocating at 3, and let k - F registers be available.
+	else{
+		currId = 3;
+		availableRegs = numRegisters - 2;
+	}
+	// if we don't have enough physical registers, perform the MAXLIVE-dependent top-down algorithm.
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
+	if(numRegisters != availableRegs){
+		// keep track of the current instruction
+		int currInstr = 0;
+		// keep a list of intNodes that indicate which registers are live at each instruction
+		intNode liveList = NULL;
+		// keep track of how far along we are in allocating offsets.
+		int currOffset = -4;
+		// iterate through the file line-by-line. 
+		while(read = getline(&currLine, &len, file) != -1) {
+			// Ignore a blank line or a comment.
+			if(strlen(currLine) != 1 && currLine[0] != '/') {
+				// update liveList for this line
+				trackLiveRegs(currInstr, head, &liveList)
+				// check the size of liveList
+				int liveRegs = 0;
+				intNode currReg = liveList;
+				while(currReg != NULL) {
+					liveRegs += 1;
+					currReg = currReg->next;
+				}
+				// determine how many registers must be spilled at this line
+				int needSpilled = availableRegs - liveRegs;
+				// go through sortedRegs array and for each cell that matches an ID in liveList,
+				// set its status and location accordingly, until no more registers need to be spilled.
+				index = 0;
+				while(needSpilled > 0) {
+					if(intNodeExists(sortedRegs[index], liveList) == 1) {
+						// obtain the target register to be spilled
+						regNode regToSpill = getRegNode(sortedRegs[index], head);
+						regNode->status = MEM;
+						regNode->offset = currOffset;
+						currOffset -= 4;
+						needSpilled -= 1;
+					}
+					index += 1;
+				}
+			}
+			// free the current line's memory, and set the pointer to null
+			free(currLine);
+			currLine = NULL;
+		}
+		// Be kind: Rewind (the file pointer)!
+		rewind(file);
+	}
 
 	// SKELETON BELOW FOR INPUT! Do NOT use as-is, modify accordingly given how we allocate physical registers.
 	// Getting started: let's go through the file and perform top-down operations on
 	// every non-blank line.
-	ssize_t read = 0;
-	ssize_t len = 0;
-	char *currLine = NULL;
+	read = 0;
+	len = 0;
+	currLine = NULL;
 	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
 	// the line and provide the according output.
 	while(read = getline(&currLine, &len, file) != -1) {
