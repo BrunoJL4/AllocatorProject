@@ -203,21 +203,6 @@ This is used in the lecture top-down allocation, because we choose to evict regi
 an order.*/
 int ascCompLive(const void *in1, const void *in2);
 
-/* Keeps track of the registers that are live at the given instruction (the instruction falls within
-the live range). This will exclude instructions that are at a register's last instruction, as registers
-are only live on exit (and if a register's last instruction is an assignment, it's never live).
-
-Essentially adds any registers whose status != MEM, AND for whom firstInstr <= instr < lastInstr.
-Deletes any registers from the list whose lastInstr == instr.
-
-Excludes r0.
-Excludes any registers that are already spilled into memory, such that regNode->status == MEM.
-This information would be useless. registers of status NONE and PHYS are not yet spilled
-and are thus considered "live". The head of the list is passed in by reference so that we can
-change it accordingly within the function (particularly if it's NULL).
-*/
-void trackLiveRegs(int instr, regNode regHead, intNode *idHeadPtr);
-
 /* Performs the top-down allocation from lecture. Only the number of physical registers
 and the file pointer. Output is given to stdout. 
 

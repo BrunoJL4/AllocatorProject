@@ -5,14 +5,7 @@ Top-down allocation for this part isn't so hard.
 We also do it at the very beginning. Just like before, if we have enough (or more than enough) physical
 registers, we just assign them to the virtual registers (minus r0) like before.
 
-Otherwise, go through line-by-line and keep track of which registers are live at the time, and so on, using
-trackLiveRegs(). At each line, we see if MAXLIVE is greater than the number of allocatable registers. If it
-is, we see how many registers we need to spill here. Once we've determined that, we see how many registers
-are exempt in the sorted list (num_live - num_to_spill). We go through the list and, for each that matches
-one of the registers in the live-list, we check off one exempt register. Once we've traversed the given number
-of exempt registers, we take the next num_to_spill registers we find are in the live-list, and give them a
-decreasing offset (starting at -4) and set their status to MEM. We can trust trackLiveRegs() to 
-remove the to-be-spilled ones on the next iteration and not add them back in.
+Otherwise, we need to go through line-by-line and determine which registers need to be spilled.
 
 We end allocation by rewinding the file pointer.
 
