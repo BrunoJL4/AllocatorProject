@@ -5,7 +5,49 @@ Top-down allocation for this part isn't so hard.
 We also do it at the very beginning. Just like before, if we have enough (or more than enough) physical
 registers, we just assign them to the virtual registers (minus r0) like before.
 
-Otherwise, we need to go through line-by-line and determine which registers need to be spilled.
+We start out with the linked list of regNodes, and the sorted array of regNodes using
+ascCompLive(). 
+
+Otherwise, we need to do a couple of passes through the file to determine
+1) Which virtual registers need to be spilled, and
+2) Which virtual registers have which physical registers at a given time.
+
+Steps 1 + 2: Determining which registers are spilled, AND simultaneously determining which virtual registers
+get/keep/lose their physical register.
+This involves going through the file and keeping track, line-by-line, of which registers are live. 
+Variables needed:
+a) int currInstr- keeps track of current instruction number
+b) intNode liveList- keeps track of which registers (by ID) are live at the point in execution
+c) int currOffset- keeps track of the next offset available to provide for spilling (starts at -4).
+d) int *physStatus- keeps track of whether a physical register matching the given ID is actually available
+for use. Index 0 would equate to r3, while the last index would equate to r(availableRegs) (?).
+If a value is 0, that indicates the given register (r(index+3)) is being used; a 1 indicates it's available
+for use.
+We do this as follows for each line:
+	i) Parse the line for registers and constants, depending on the operation type. Use the file-parsing
+	skeleton for this.
+
+	Step 1: Spilling registers
+	i) For registers for whom the current instruction is within its live range, and who haven't been spilled
+	yet, add them to a linked list of intNodes containing the ID's of live nodes at the given point (liveList).
+	ii) After these considerations, check the length of the linked list (numLive). If its length > availableRegs,
+	set numToSpill to availableRegs - numLive.
+	iii) Go through the sorted register list. For each that exists in liveList, set its status to MEM and give it
+	an according offset.
+	iv) Delink each of the registers in liveList who have been assigned a status of MEM.
+
+	Step 2: allocating physical registers
+	i) Go through the current list of live registers and check for any whose last instruction equals the current
+	instruction. For any of those...
+		1) Set physStatus[relevantIndex] such that the physical register is now available for use, IF the
+		register's status == PHYS.
+		2) Delink it from the linked list accordingly.
+	ii) Go through the updated list of live registers and check for any whose status == NONE. 
+		1) Go through physStatus and find a physical register that can be assigned to it (array value is 1). When we find one,
+		change the array's value to 0 and set the status/physId accordingly for the target register.
+
+Once this step has been finished, rewind the file pointer.
+
 
 We end allocation by rewinding the file pointer.
 
