@@ -391,6 +391,82 @@ regNode *sortedRegArr(regNode head, TD_TYPE type) {
 	return retArr;
 }
 
+int intNodeListLength(intNode head) {
+	intNode curr = head;
+	int length = 0;
+	while(curr != NULL) {
+		length += 1;
+		curr = curr->next;
+	}
+	return length;
+}
+
+int regNodeListLength(regNode head) {
+	regNode curr = head;
+	int length = 0;
+	while(curr != NULL) {
+		length += 1;
+		curr = curr->next;
+	}
+	return length;
+}
+
+void deleteIntNode(int target, intNode *headPtr) {
+	intNode currNode = *headPtr;
+	intNode prevNode = NULL;
+	// iterate through each node
+	while(currNode != NULL) {
+		// first case: currNode is target, and prevNode is NULL, meaning that current node is head.
+		if(currNode->val == target && prevNode == NULL) {
+			// delink the head from the list, free it, and change the head reference
+			prevNode = currNode->next;
+			free(currNode);
+			currNode = prevNode;
+			// note that we change the value referenced by headPtr to be the next node in the sequence.
+			*headPtr = currNode;
+		}
+		// normal case: currNode is target and prevNode is not NULL, meaning that current node can be
+		// delinked in middle.
+		else if(currNode->val == target && prevNode != NULL) {
+			prevNode = currNode;
+			prevNode->next = currNode->next;
+			currNode = currNode->next;
+		}
+		// otherwise, iterate as normal
+		else{
+			prevNode = currNode;
+			currNode = currNode->next;
+		}
+	}
+	return;
+}
+
+void addIntNode(int val, intNode *intHeadPtr) {
+	intNode newNode = createIntNode(val);
+	// First case: if the regNode has no occurrences, change the pointer to reference a new head.
+	intNode currNode = *intHeadPtr;
+	if(currNode == NULL) {
+		*intHeadPtr = newNode;
+		return;
+	}
+	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
+	// If the occurrence isn't present, add it to the very end.
+	while(currNode != NULL) {
+		// Return if we've found the occurrence already present.
+		if(currNode->val == val) {
+			free(newNode);
+			return;
+		}
+		if(currNode->next == NULL) {
+			break;
+		}
+		currNode = currNode->next;
+	}
+	// If we've reached the end without a match, add newNode to the end, then return.
+	currNode->next = newNode;
+	return;
+}
+
 /* Top-down allocation (simple) support functions defined here. */
 
 int descComp(const void *in1, const void *in2) {
@@ -697,81 +773,8 @@ void opSimpleTD(char *currLine, regNode head) {
 	}
 }
 
-int intNodeListLength(intNode head) {
-	intNode curr = head;
-	int length = 0;
-	while(curr != NULL) {
-		length += 1;
-		curr = curr->next;
-	}
-	return length;
-}
 
-int regNodeListLength(regNode head) {
-	regNode curr = head;
-	int length = 0;
-	while(curr != NULL) {
-		length += 1;
-		curr = curr->next;
-	}
-	return length;
-}
-
-void deleteIntNode(int target, intNode *headPtr) {
-	intNode currNode = *headPtr;
-	intNode prevNode = NULL;
-	// iterate through each node
-	while(currNode != NULL) {
-		// first case: currNode is target, and prevNode is NULL, meaning that current node is head.
-		if(currNode->val == target && prevNode == NULL) {
-			// delink the head from the list, free it, and change the head reference
-			prevNode = currNode->next;
-			free(currNode);
-			currNode = prevNode;
-			// note that we change the value referenced by headPtr to be the next node in the sequence.
-			*headPtr = currNode;
-		}
-		// normal case: currNode is target and prevNode is not NULL, meaning that current node can be
-		// delinked in middle.
-		else if(currNode->val == target && prevNode != NULL) {
-			prevNode = currNode;
-			prevNode->next = currNode->next;
-			currNode = currNode->next;
-		}
-		// otherwise, iterate as normal
-		else{
-			prevNode = currNode;
-			currNode = currNode->next;
-		}
-	}
-	return;
-}
-
-void addIntNode(int val, intNode *intHeadPtr) {
-	intNode newNode = createIntNode(val);
-	// First case: if the regNode has no occurrences, change the pointer to reference a new head.
-	intNode currNode = *intHeadPtr;
-	if(currNode == NULL) {
-		*intHeadPtr = newNode;
-		return;
-	}
-	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
-	// If the occurrence isn't present, add it to the very end.
-	while(currNode != NULL) {
-		// Return if we've found the occurrence already present.
-		if(currNode->val == val) {
-			free(newNode);
-			return;
-		}
-		if(currNode->next == NULL) {
-			break;
-		}
-		currNode = currNode->next;
-	}
-	// If we've reached the end without a match, add newNode to the end, then return.
-	currNode->next = newNode;
-	return;
-}
+/* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
 void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr) {
 	// add any node to liveList which is alive at this instruction, AND which isn't already spilled,
@@ -836,9 +839,6 @@ void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head,
 		}
 	}
 }
-
-
-/* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
 
 int ascCompLive(const void *in1, const void *in2) {

@@ -23,9 +23,7 @@ d) int *physStatus- keeps track of whether a physical register matching the give
 for use. Index 0 would equate to r3, while the last index would equate to r(availableRegs) (?).
 If a value is 0, that indicates the given register (r(index+3)) is being used; a 1 indicates it's available
 for use.
-We do this as follows for each line:
-	i) Parse the line for registers and constants, depending on the operation type. Use the file-parsing
-	skeleton for this.
+We do this as follows:
 
 	Step 1: Spilling registers
 	i) For registers for whom the current instruction is within its live range, and who haven't been spilled
@@ -46,6 +44,9 @@ We do this as follows for each line:
 		1) Go through physStatus and find a physical register that can be assigned to it (array value is 1). When we find one,
 		change the array's value to 0 and set the status/physId accordingly for the target register. If we can't find one,
 		we've messed up somewhere in our algorithm, so exit on failure.
+
+WHY don't I need to parse through the file line-by-line to do this all? Simple: the regNode list from the beginning already
+stores all of the information I need! Not sure why I didn't pick up on this.
 
 Once this step has been finished, rewind the file pointer.
 
