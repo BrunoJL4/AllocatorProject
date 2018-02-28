@@ -141,7 +141,7 @@ instructions.
 
 Attempts will regularly be made to add duplicate occurrences, as registers will often
 appear in the same line.*/
-void addOcc(int occ, uint id, regNode);
+void addIntNode(int val, uint id, regNode);
 
 /* Debugging function. Prints out the contents of a regNode. */
 void printRegNode(regNode node);
@@ -178,6 +178,9 @@ regNode *sortedRegArr(regNode head, TD_TYPE type);
 
 /* Returns the length of a list of intNodes. */
 int intNodeListLength(intNode head);
+
+/* Returns the length of a list of regNodes. */
+int regNodeListLength(regNode head);
 
 /* Deletes the target intNode from the list. If applicable, changes headPtr's referenced intNode
 (if the target is at head). */

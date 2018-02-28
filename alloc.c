@@ -70,7 +70,7 @@ int nextNum(char *line, int *currIndexPtr) {
 }
 	
 
-void addOcc(int occ, uint id, regNode head) {
+void addIntNode(int val, uint id, regNode head) {
 	// First, obtain the regNode corresponding to parameter id, if any.
 	regNode currReg = head;
 	while(currReg != NULL) {
@@ -81,12 +81,12 @@ void addOcc(int occ, uint id, regNode head) {
 	}
 	// If target register not present, return.
 	if(currReg == NULL) {
-		printf("Error in addOcc()! Register r%d not present, but attempting to add occurrence at line %d\n",
-			id, occ);
+		printf("Error in addIntNode()! Register r%d not present, but attempting to add occurrence at line %d\n",
+			id, val);
 		exit(EXIT_FAILURE);
 	}
 	// Otherwise, continue on and attempt to add the occurrence.
-	intNode newNode = createIntNode(occ);
+	intNode newNode = createIntNode(val);
 	// First case: if the regNode has no occurrences, add a newly-allocated node in.
 	intNode currNode = currReg->firstOcc;
 	if(currNode == NULL) {
@@ -97,7 +97,7 @@ void addOcc(int occ, uint id, regNode head) {
 	// If the occurrence isn't present, add it to the very end.
 	while(currNode != NULL) {
 		// Return if we've found the occurrence already present.
-		if(currNode->val == occ) {
+		if(currNode->val == val) {
 			free(newNode);
 			return;
 		}
@@ -233,15 +233,15 @@ regNode genRegList(FILE *file) {
 			// occurrence already exists, each respective operation is ignored by the function.
 			if(opReg1 != -1) {
 				addReg(opReg1, firstNode);
-				addOcc(currInstr, opReg1, firstNode);
+				addIntNode(currInstr, opReg1, firstNode);
 			}
 			if(opReg2 != -1) {
 				addReg(opReg2, firstNode);
-				addOcc(currInstr, opReg2, firstNode);
+				addIntNode(currInstr, opReg2, firstNode);
 			}
 			if(opReg3 != -1) {
 				addReg(opReg3, firstNode);
-				addOcc(currInstr, opReg3, firstNode);
+				addIntNode(currInstr, opReg3, firstNode);
 			}
 			// increment the instruction number, since we've successfully finished a valid instruction.
 			currInstr += 1;
@@ -396,7 +396,7 @@ regNode *sortedRegArr(regNode head, TD_TYPE type) {
 	}
 	else if(type == LIVE) {
 		// Sort midArr using qsort() and descCompLive.
-		qsort((void *) midArr, listLength - 1, sizeof(regNode), descCompLive);
+		qsort((void *) midArr, listLength - 1, sizeof(regNode), ascCompLive);
 	}
 	else{
 		printf("ERROR in sortedRegArr! Invalid flag: %d\n", type);
@@ -419,18 +419,10 @@ int descComp(const void *in1, const void *in2) {
 	regNode n1 = *((regNode *) in1);
 	regNode n2 = *((regNode *) in2);
 	// obtain number of occurrences of each register
-	int n1Count = 0;
-	int n2Count = 0;
 	intNode currNode = n1->firstOcc;
-	while(currNode != NULL) {
-		n1Count += 1;
-		currNode = currNode->next;
-	}
 	currNode = n2->firstOcc;
-	while(currNode != NULL) {
-		n2Count += 1;
-		currNode = currNode->next;
-	}
+	int n1Count = intNodeListLength(n1->firstOcc);
+	int n2Count = intNodeListLength(n2->firstOcc);
 	// return -1 if first register has more occs than second
 	if(n1Count > n2Count) {
 //		printf("r%d > r%d!\n\n", n1->id, n2->id);
@@ -457,18 +449,10 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// Start allocating physical registers at either r1 (number of physical registers >=
 	// number of virtual registers, or r3 (2 feasible registers).
 	uint currId;
-	int length = 0;
 	int availableRegs = 0;
 	int index = 0;
 	// determine how many virtual registers there are. ignore r0!
-	regNode currNode = sortedRegs[0];
-	while(currNode != NULL) {
-		if(currNode->id != 0) {
-			length += 1;
-		}
-		index += 1;
-		currNode = sortedRegs[index];
-	}
+	int length = regNodeListLength(head);
 	// if there are enough registers to ignore feasible register requirements, make all
 	// of the registers available.
 	if(numRegisters >= length) {
@@ -481,7 +465,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 		availableRegs = numRegisters - 2;
 	}
 	index = 0;
-	regNode currReg;
+	regNode currReg = sortedRegs[index];
 	// Allocate as many physical registers as we have available for such, until we
 	// either run out of physical registers or virtual registers (in sortedRegs).
 	while(availableRegs > 0 && sortedRegs[index] != NULL) {
@@ -735,7 +719,23 @@ void opSimpleTD(char *currLine, regNode head) {
 }
 
 int intNodeListLength(intNode head) {
+	intNode curr = head;
+	int length = 0;
+	while(curr != NULL) {
+		length += 1;
+		curr = curr->next;
+	}
+	return length;
+}
 
+int regNodeListLength(regNode head) {
+	regNode curr = head;
+	int length = 0;
+	while(curr != NULL) {
+		length += 1;
+		curr = curr->next;
+	}
+	return length;
 }
 
 void deleteIntNode(int target, intNode *headPtr) {
@@ -743,7 +743,7 @@ void deleteIntNode(int target, intNode *headPtr) {
 }
 
 void chooseAndSpill(int instr, regNode head, intNode liveList) {
-	
+
 }
 
 
@@ -755,18 +755,10 @@ int ascCompLive(const void *in1, const void *in2) {
 	regNode n1 = *((regNode *) in1);
 	regNode n2 = *((regNode *) in2);
 	// obtain number of occurrences of each register
-	int n1Count = 0;
-	int n2Count = 0;
 	intNode currNode = n1->firstOcc;
-	while(currNode != NULL) {
-		n1Count += 1;
-		currNode = currNode->next;
-	}
 	currNode = n2->firstOcc;
-	while(currNode != NULL) {
-		n2Count += 1;
-		currNode = currNode->next;
-	}
+	int n1Count = intNodeListLength(n1->firstOcc);
+	int n2Count = intNodeListLength(n2->firstOcc);
 	// return -1 if first register has fewer occs than second
 	if(n1Count < n2Count) {
 		return -1;
