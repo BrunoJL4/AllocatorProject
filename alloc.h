@@ -251,15 +251,6 @@ live. Modifies the list of liveRegs accordingly, and the status/location propert
 to input head. */
 void topDownLive(int numRegs, FILE *file);
 
-/* Performs the actual operations for lecture top-down allocation. This includes:
-
-1. Parsing the input for operation type/virtual register ID's, just like simple top-down.
-2. Determining which operations are live at this line, and which aren't. 
-
-*/
-void opLiveTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
-	int allocRegs);
-
 
 /* Bottom-up exclusive functions below. */
 
