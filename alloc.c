@@ -776,7 +776,7 @@ void opSimpleTD(char *currLine, regNode head) {
 
 /* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
-void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr) {
+void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode head, intNode *liveListPtr) {
 	// add any node to liveList which is alive at this instruction, AND which isn't already spilled,
 	// AND which isn't r0
 	intNode liveList = *liveListPtr;
@@ -789,9 +789,9 @@ void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head,
 	// if the number of live registers at the moment is greater than the number of available allocatable registers,
 	// we need to spill some.
 	int numLive = intNodeListLength(liveList);
-	if(numLive > availableRegs) {
+	if(numLive > allocatableRegs) {
 		// number of registers that must be spilled
-		int numToSpill = numLive - availableRegs;
+		int numToSpill = numLive - allocatableRegs;
 		// array of registers sorted in ascending order of occurrences, tie-breaker live range
 		regNode *sortedArr = sortedRegArr(head, LIVE);
 		// iterate through sortedArr numToSpill times.
@@ -840,6 +840,9 @@ void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head,
 	}
 }
 
+void chooseAndAllocate(int instr, int availableRegs, PHYS_STATUSES *physStatuses, regNode head, intNode *liveListPtr) {
+
+}
 
 int ascCompLive(const void *in1, const void *in2) {
 	// cast the inputs to regNodes

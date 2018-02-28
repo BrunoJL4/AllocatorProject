@@ -53,15 +53,13 @@ Once this step has been finished, rewind the file pointer.
 We should write helper functions to help make topDownLive() less complicated and consume fewer lines of real estate.
 Obviously we're parsing line-by-line, so we should have functions that work on that basis.
 
-int intNodeListLength(intNode head): returns the length of an intNode list.
+** other functions that were defined in header **
 
-void deleteIntNode(int target, intNode *headPtr): deletes the target intNode, changing the reference of head
-if necessary. also frees the target.
-
-void chooseSpills(int instr, regNode head, intNode liveList): sets the registers' status/locations accordingly given
+void chooseAndSpill(int instr, regNode head, intNode liveList): sets the registers' status/locations accordingly given
 a list of registers that are live at a line. also delinks and frees each of the intNodes in liveList that were set
 to MEM.
 
+void chooseAndAllocate(int instr, int availableRegs, int *physStatuses, regNode head, intNode *liveListPtr)
 
 We end allocation by rewinding the file pointer.
 

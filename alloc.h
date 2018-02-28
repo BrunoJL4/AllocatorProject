@@ -52,6 +52,12 @@ typedef enum TD_TYPE_ENUM {
 	LIVE = 1
 } TD_TYPE;
 
+/* The enum type for physical register availability. Used in live-range dependent top-down allocation.*/
+typdef enum PHYS_STATUS_ENUM {
+	USED = 0,
+	FREE = 1
+} PHYS_STATUS;
+
 /* End enum definitions. */
 
 /* General struct definitions included below. */
@@ -209,8 +215,25 @@ int descComp(const void *in1, const void *in2);
 
 /* Given an instruction number, this function goes through the list of regNodes and adds them to the liveList
 if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
-and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
-void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr);
+and changes their status/location accordingly. Finally, it removes the spilled registers from the list. 
+
+If there are no allocatable registers available, this function will spill every register on each line.*/
+void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode head, intNode *liveListPtr);
+
+
+/* This function assumes that the scanning/liveList operations/spilling from chooseAndSpill have already occurred.
+
+Takes an instruction number, the number of allocatable registers, an enum array indicating (for a given index)
+the status of a physical register, the regNode list, and a pointer to liveList. 
+
+First goes through liveList and checks for any virtual registers that, at this instruction, are no longer live.
+For these virtual registers, we remove them from liveList and set the according index in physStatuses to FREE.
+Then we do another pass and, for each one whose physStatus is FREE, delink it from liveList.
+
+*physStatuses's index for the register it references corresponds to: physStatuses[0] indicates the status of r3.
+physStatuses[1] for r4, and so on. If we have NO allocatable registers, the array will be NULL, and allocatableRegs
+will be 0. Return instantly in that case.*/
+void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, regNode head, intNode *liveListPtr);
 
 /* Compares the two regNodes such that a qsort()'ed list will be set in ascending order
 of number of occurrences. Live range will be used as a tie-breaker- the longer live range
