@@ -739,7 +739,33 @@ int regNodeListLength(regNode head) {
 }
 
 void deleteIntNode(int target, intNode *headPtr) {
-
+	intNode currNode = *headPtr;
+	intNode prevNode = NULL;
+	// iterate through each node
+	while(currNode != NULL) {
+		// first case: currNode is target, and prevNode is NULL, meaning that current node is head.
+		if(currNode->val == target && prevNode == NULL) {
+			// delink the head from the list, free it, and change the head reference
+			prevNode = currNode->next;
+			free(currNode);
+			currNode = prevNode;
+			// note that we change the value referenced by headPtr to be the next node in the sequence.
+			*headPtr = currNode;
+		}
+		// normal case: currNode is target and prevNode is not NULL, meaning that current node can be
+		// delinked in middle.
+		else if(currNode->val == target && prevNode != NULL) {
+			prevNode = currNode;
+			prevNode->next = currNode->next;
+			currNode = currNode->next;
+		}
+		// otherwise, iterate as normal
+		else{
+			prevNode = currNode;
+			currNode = currNode->next;
+		}
+	}
+	return;
 }
 
 void chooseAndSpill(int instr, regNode head, intNode liveList) {
