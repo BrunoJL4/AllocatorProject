@@ -141,7 +141,7 @@ instructions.
 
 Attempts will regularly be made to add duplicate occurrences, as registers will often
 appear in the same line.*/
-void addIntNode(int val, uint id, regNode);
+void addOccToReg(int val, uint id, regNode);
 
 /* Debugging function. Prints out the contents of a regNode. */
 void printRegNode(regNode node);
@@ -186,10 +186,13 @@ int regNodeListLength(regNode head);
 (if the target is at head). */
 void deleteIntNode(int target, intNode *headPtr);
 
-/* Given an instruction, this function goes through the list of regNodes and adds them to the liveList
+/* Given an instruction number, this function goes through the list of regNodes and adds them to the liveList
 if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
 and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
 void chooseAndSpill(int instr, regNode head, intNode liveList);
+
+/* Adds an intNode to the end of the list, which is pointed to by intHeadPtr. */
+void addIntNode(int val, intNode *intHeadPtr);
 
 /* Simple top-down exclusive functions below. */
 

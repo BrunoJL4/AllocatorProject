@@ -70,44 +70,23 @@ int nextNum(char *line, int *currIndexPtr) {
 }
 	
 
-void addIntNode(int val, uint id, regNode head) {
+void addOccToReg(int val, uint targetReg, regNode head) {
 	// First, obtain the regNode corresponding to parameter id, if any.
 	regNode currReg = head;
 	while(currReg != NULL) {
-		if(currReg->id == id) {
+		if(currReg->id == targetReg) {
 			break;
 		}
 		currReg = currReg->next;
 	}
 	// If target register not present, return.
 	if(currReg == NULL) {
-		printf("Error in addIntNode()! Register r%d not present, but attempting to add occurrence at line %d\n",
-			id, val);
+		printf("Error in addOccToReg()! Register r%d not present, but attempting to add occurrence at line %d\n",
+			targetReg, val);
 		exit(EXIT_FAILURE);
 	}
 	// Otherwise, continue on and attempt to add the occurrence.
-	intNode newNode = createIntNode(val);
-	// First case: if the regNode has no occurrences, add a newly-allocated node in.
-	intNode currNode = currReg->firstOcc;
-	if(currNode == NULL) {
-		currReg->firstOcc = newNode;
-		return;
-	}
-	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
-	// If the occurrence isn't present, add it to the very end.
-	while(currNode != NULL) {
-		// Return if we've found the occurrence already present.
-		if(currNode->val == val) {
-			free(newNode);
-			return;
-		}
-		if(currNode->next == NULL) {
-			break;
-		}
-		currNode = currNode->next;
-	}
-	// If we've reached the end without a match, add newNode to the end, then return.
-	currNode->next = newNode;
+	addIntNode(val, &(currReg->firstOcc));
 	return;
 }
 
@@ -233,15 +212,15 @@ regNode genRegList(FILE *file) {
 			// occurrence already exists, each respective operation is ignored by the function.
 			if(opReg1 != -1) {
 				addReg(opReg1, firstNode);
-				addIntNode(currInstr, opReg1, firstNode);
+				addOccToReg(currInstr, opReg1, firstNode);
 			}
 			if(opReg2 != -1) {
 				addReg(opReg2, firstNode);
-				addIntNode(currInstr, opReg2, firstNode);
+				addOccToReg(currInstr, opReg2, firstNode);
 			}
 			if(opReg3 != -1) {
 				addReg(opReg3, firstNode);
-				addIntNode(currInstr, opReg3, firstNode);
+				addOccToReg(currInstr, opReg3, firstNode);
 			}
 			// increment the instruction number, since we've successfully finished a valid instruction.
 			currInstr += 1;
@@ -768,8 +747,44 @@ void deleteIntNode(int target, intNode *headPtr) {
 	return;
 }
 
-void chooseAndSpill(int instr, regNode head, intNode liveList) {
+void addIntNode(int val, intNode *intHeadPtr) {
+	intNode newNode = createIntNode(val);
+	// First case: if the regNode has no occurrences, change the pointer to reference a new head.
+	intNode currNode = *intHeadPtr;
+	if(currNode == NULL) {
+		*intHeadPtr = newNode;
+		return;
+	}
+	// Normal case: first node is occupied and not the same as the input. Iterate through the list. 
+	// If the occurrence isn't present, add it to the very end.
+	while(currNode != NULL) {
+		// Return if we've found the occurrence already present.
+		if(currNode->val == val) {
+			free(newNode);
+			return;
+		}
+		if(currNode->next == NULL) {
+			break;
+		}
+		currNode = currNode->next;
+	}
+	// If we've reached the end without a match, add newNode to the end, then return.
+	currNode->next = newNode;
+	return;
+}
 
+void chooseAndSpill(int instr, regNode head, intNode liveList) {
+	// add any node to liveList which is alive at this instruction, AND which isn't already spilled,
+	// AND which isn't r0
+	regNode currReg = head;
+	while(currReg != NULL) {
+		if(currReg->status != MEM && currReg->id != 0 && currReg->firstInstr >= instr && currReg->lastInstr < instr) {
+			// add a new intNode to the liveList if it isn't already there
+			if(intNodeExists(currReg->id, liveList) == -1) {
+
+			}
+		}
+	}
 }
 
 
