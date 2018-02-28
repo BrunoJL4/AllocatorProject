@@ -189,7 +189,7 @@ void deleteIntNode(int target, intNode *headPtr);
 /* Given an instruction number, this function goes through the list of regNodes and adds them to the liveList
 if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
 and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
-void chooseAndSpill(int instr, regNode head, intNode liveList);
+void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr);
 
 /* Adds an intNode to the end of the list, which is pointed to by intHeadPtr. */
 void addIntNode(int val, intNode *intHeadPtr);

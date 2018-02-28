@@ -773,16 +773,66 @@ void addIntNode(int val, intNode *intHeadPtr) {
 	return;
 }
 
-void chooseAndSpill(int instr, regNode head, intNode liveList) {
+void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr) {
 	// add any node to liveList which is alive at this instruction, AND which isn't already spilled,
 	// AND which isn't r0
+	intNode liveList = *liveListPtr;
 	regNode currReg = head;
 	while(currReg != NULL) {
 		if(currReg->status != MEM && currReg->id != 0 && currReg->firstInstr >= instr && currReg->lastInstr < instr) {
-			// add a new intNode to the liveList if it isn't already there
-			if(intNodeExists(currReg->id, liveList) == -1) {
-
+			addIntNode(currReg->id, &(liveList));
+		}
+	}
+	// if the number of live registers at the moment is greater than the number of available allocatable registers,
+	// we need to spill some.
+	int numLive = intNodeListLength(liveList);
+	if(numLive > availableRegs) {
+		// number of registers that must be spilled
+		int numToSpill = numLive - availableRegs;
+		// array of registers sorted in ascending order of occurrences, tie-breaker live range
+		regNode *sortedArr = sortedRegArr(head, LIVE);
+		// iterate through sortedArr numToSpill times.
+		int nextOffset = *currOffset;
+		int index = 0;
+		intNode currInt = liveList;
+		while(currInt != NULL) {
+			// if the register in question matches one in liveList, change its properties to indicate
+			// that it's spilled.
+			if(intNodeExists(sortedArr[index]->id, liveList) == 1) {
+				sortedArr[index]->status = MEM;
+				sortedArr[index]->offset = nextOffset;
+				// decrement to the next available offset
+				nextOffset -= 4;
+				// one less register to spill
+				numToSpill -= 1;
 			}
+			// if we've spilled as many registers as needed, break the loop
+			if(numToSpill == 0) {
+				break;
+			}
+			currInt = currInt->next;
+			index += 1;
+		}
+		// modify currOffset to reflect the next available offset.
+		*currOffset = nextOffset;
+	}
+	// go through liveList and delink any registers with a status of MEM
+	intNode currInt = liveList;
+	while(currInt != NULL) {
+		// if the status is MEM:
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == MEM) {
+			// capture this intNode's value
+			int id = currInt->val;
+			// iterate currInt to the next available node (could end up freeing currInt,
+			// need to iterate here first)
+			currInt = currInt->next;
+			// delink the current node from liveList
+			deleteIntNode(id, &liveList);
+		}
+		// otherwise, keep iterating through
+		else{
+			currInt = currInt->next;
 		}
 	}
 }
