@@ -426,13 +426,14 @@ void deleteIntNode(int target, intNode *headPtr) {
 			currNode = prevNode;
 			// note that we change the value referenced by headPtr to be the next node in the sequence.
 			*headPtr = currNode;
+			break;
 		}
 		// normal case: currNode is target and prevNode is not NULL, meaning that current node can be
 		// delinked in middle.
 		else if(currNode->val == target && prevNode != NULL) {
-			prevNode = currNode;
 			prevNode->next = currNode->next;
-			currNode = currNode->next;
+			free(currNode);
+			break;
 		}
 		// otherwise, iterate as normal
 		else{
@@ -778,7 +779,7 @@ void opSimpleTD(char *currLine, regNode head) {
 /* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
 void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr) {
-	printf("running chooseAndSpill() for instruction %d\n", instr);
+//	printf("running chooseAndSpill() for instruction %d\n", instr);
 	// add any node to liveList which became live at this instruction, AND which isn't already spilled,
 	// AND which isn't r0
 	intNode liveList = *liveListPtr;
@@ -787,19 +788,19 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 		//printf("currReg->firstInstr is: %d\n", currReg->firstInstr);
 		//printf("currReg->lastInstr is: %d\n", currReg->lastInstr);
 		if(currReg->status != MEM && currReg->id != 0 && currReg->firstInstr == instr) {
-			printf("Adding intNode in chooseAndSpill for register: r%d\n", currReg->id);
-			addIntNode(currReg->id, liveListPtr);
+//			printf("Adding intNode in chooseAndSpill for register: r%d\n", currReg->id);
+			addIntNode(currReg->id, &liveList);
 		}
 		currReg = currReg->next;
 	}
 	// if the number of live registers at the moment is greater than the number of allocatable registers,
 	// we need to spill some.
 	int numLive = intNodeListLength(liveList);
-	printf("number of live registers at this instruction: %d\n", numLive);
+//	printf("number of live registers at this instruction: %d\n", numLive);
 	if(numLive > allocatableRegs) {
 		// number of registers that must be spilled
 		int numToSpill = numLive - allocatableRegs;
-		printf("need to spill: %d registers\n", numToSpill);
+//		printf("need to spill: %d registers\n", numToSpill);
 		// array of registers sorted in ascending order of occurrences, tie-breaker live range
 		regNode *sortedArr = sortedRegArr(head, LIVE);
 		// iterate through sortedArr numToSpill times.
@@ -810,8 +811,8 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 			// if the register in question matches one in liveList, change its properties to indicate
 			// that it's spilled.
 			if(intNodeExists(sortedArr[index]->id, liveList) == 1) {
-				printf("Spilling r%d\n in chooseAndSpill()!\n", sortedArr[index]->id);
-				printf("Providing offset: %d\n", nextOffset);
+//				printf("Spilling r%d\n in chooseAndSpill()!\n", sortedArr[index]->id);
+//				printf("Providing offset: %d\n", nextOffset);
 				sortedArr[index]->status = MEM;
 				sortedArr[index]->offset = nextOffset;
 				// make the physical register free if applicable ("you no longer get a physical register")
@@ -839,25 +840,26 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 		// if the status is MEM:
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == MEM) {
-			printf("Delinking r%d from liveList in chooseAndSpill()!\n", currInt->val);
+//			printf("Delinking r%d from liveList in chooseAndSpill()!\n", currInt->val);
 			// capture this intNode's value
 			int id = currInt->val;
 			// iterate currInt to the next available node (could end up freeing currInt,
 			// need to iterate here first)
 			currInt = currInt->next;
 			// delink the current node from liveList
-			deleteIntNode(id, liveListPtr);
+			deleteIntNode(id, &liveList);
 		}
 		// otherwise, keep iterating through
 		else{
 			currInt = currInt->next;
 		}
 	}
+	*liveListPtr = liveList;
 	return;
 }
 
 void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, regNode head, intNode *liveListPtr) {
-	printf("running chooseAndAllocate() for instruction %d\n", instr);
+//	printf("running chooseAndAllocate() for instruction %d\n", instr);
 	intNode liveList = *liveListPtr;
 	intNode currInt = liveList;
 	// first pass: delink and release physical registers for any virtual registers no longer live
@@ -866,13 +868,13 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 		regNode currReg = getRegNode(currInt->val, head);
 		// if its last instruction equals this instruction (live on exit)
 		if(currReg->lastInstr == instr) {
-			printf("Delinking and freeing up physical register r%d from virtual r%d\n", currReg->physId, currReg->id);
+//			printf("Delinking and freeing up physical register r%d from virtual r%d\n", currReg->physId, currReg->id);
 			// obtain the physical register ID of the regNode
 			uint physId = currReg->physId;
 			// delink the intNode
 			int id = currInt->val;
 			currInt = currInt->next;
-			deleteIntNode(id, liveListPtr);
+			deleteIntNode(id, &liveList);
 			// update the availability of the physical register
 			int physIndex = physId - 3;
 			physStatuses[physIndex] = FREE;
@@ -892,7 +894,7 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 			// look for the next physical register available
 			int index = 0;
 			while(index < allocatableRegs) {
-				printf("physStatuses[%d] == %d\n", index, physStatuses[index]);
+//				printf("physStatuses[%d] == %d\n", index, physStatuses[index]);
 				if(physStatuses[index] == FREE) {
 					break;
 				}
@@ -903,7 +905,7 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 				printf("ERROR in chooseAndAllocate()! Couldn't find free, allocatable physical registers!\n");
 				exit(EXIT_FAILURE);
 			}
-			printf("Giving physId %d to virtual register r%d in chooseAndAllocate()!\n", index + 3, currReg->id);
+//			printf("Giving physId %d to virtual register r%d in chooseAndAllocate()!\n", index + 3, currReg->id);
 			// set the physID to index + 3 (because register allocation starts at r3)
 			currReg->physId = index + 3;
 			currReg->status = PHYS;
@@ -913,6 +915,7 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 		// iterate either way
 		currInt = currInt->next;
 	}
+	*liveListPtr = liveList;
 	return;
 }
 
