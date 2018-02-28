@@ -1039,12 +1039,6 @@ void topDownLive(int numRegisters, FILE *file) {
 	return;
 }
 
-void opLiveTD(char *currLine, regNode head, uint currInstr, regNode* sortedRegs, intNode liveRegs,
-	int allocRegs) {
-	return;
-
-}
-
 /* Bottom-up allocation support functions defined here. */
 
 
