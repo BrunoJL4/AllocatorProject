@@ -840,7 +840,7 @@ void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode hea
 	}
 }
 
-void chooseAndAllocate(int instr, int availableRegs, PHYS_STATUSES *physStatuses, regNode head, intNode *liveListPtr) {
+void chooseAndAllocate(int instr, int availableRegs, PHYS_STATUS *physStatuses, regNode head, intNode *liveListPtr) {
 
 }
 

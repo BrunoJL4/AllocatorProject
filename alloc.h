@@ -53,7 +53,7 @@ typedef enum TD_TYPE_ENUM {
 } TD_TYPE;
 
 /* The enum type for physical register availability. Used in live-range dependent top-down allocation.*/
-typdef enum PHYS_STATUS_ENUM {
+typedef enum PHYS_STATUS_ENUM {
 	USED = 0,
 	FREE = 1
 } PHYS_STATUS;
