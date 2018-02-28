@@ -176,6 +176,17 @@ x virtual registers including r0, the length of the array will be x, with ret[x]
 Note that the array returned from here must be freed.*/
 regNode *sortedRegArr(regNode head, TD_TYPE type);
 
+/* Returns the length of a list of intNodes. */
+int intNodeListLength(intNode head);
+
+/* Deletes the target intNode from the list. If applicable, changes headPtr's referenced intNode
+(if the target is at head). */
+void deleteIntNode(int target, intNode *headPtr);
+
+/* Given an instruction, this function goes through the list of regNodes and adds them to the liveList
+if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
+and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
+void chooseAndSpill(int instr, regNode head, intNode liveList);
 
 /* Simple top-down exclusive functions below. */
 

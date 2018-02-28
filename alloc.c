@@ -734,6 +734,17 @@ void opSimpleTD(char *currLine, regNode head) {
 	}
 }
 
+int intNodeListLength(intNode head) {
+
+}
+
+void deleteIntNode(int target, intNode *headPtr) {
+
+}
+
+void chooseAndSpill(int instr, regNode head, intNode liveList) {
+	
+}
 
 
 /* Top-down allocation (lecture, or LIVE version) support functions defined here. */

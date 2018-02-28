@@ -62,9 +62,6 @@ a list of registers that are live at a line. also delinks and frees each of the 
 to MEM.
 
 
-
-
-
 We end allocation by rewinding the file pointer.
 
 Then we just go through again, line-by-line, and call opSimpleTd() like before, since we've determined
