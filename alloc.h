@@ -218,8 +218,7 @@ if they're not already there. It then, if necessary, decides which registers to 
 and changes their status/location accordingly. Finally, it removes the spilled registers from the list. 
 
 If there are no allocatable registers available, this function will spill every register on each line.*/
-void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode head, intNode *liveListPtr);
-
+void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr);
 
 /* This function assumes that the scanning/liveList operations/spilling from chooseAndSpill have already occurred.
 
