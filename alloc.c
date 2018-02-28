@@ -405,7 +405,9 @@ int regNodeListLength(regNode head) {
 	regNode curr = head;
 	int length = 0;
 	while(curr != NULL) {
-		length += 1;
+		if(curr->id != 0) {
+			length += 1;
+		}
 		curr = curr->next;
 	}
 	return length;
@@ -505,7 +507,6 @@ void topDownSimple(int numRegisters, FILE *file) {
 	// number of virtual registers, or r3 (2 feasible registers).
 	uint currId;
 	int availableRegs = 0;
-	int index = 0;
 	// determine how many virtual registers there are. ignore r0!
 	int length = regNodeListLength(head);
 	// if there are enough registers to ignore feasible register requirements, make all
@@ -519,7 +520,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 		currId = 3;
 		availableRegs = numRegisters - 2;
 	}
-	index = 0;
+	int index = 0;
 	regNode currReg = sortedRegs[index];
 	// Allocate as many physical registers as we have available for such, until we
 	// either run out of physical registers or virtual registers (in sortedRegs).
@@ -783,10 +784,11 @@ void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode hea
 	regNode currReg = head;
 	while(currReg != NULL) {
 		if(currReg->status != MEM && currReg->id != 0 && currReg->firstInstr >= instr && currReg->lastInstr < instr) {
-			addIntNode(currReg->id, &(liveList));
+			addIntNode(currReg->id, liveListPtr);
 		}
+		currReg = currReg->next;
 	}
-	// if the number of live registers at the moment is greater than the number of available allocatable registers,
+	// if the number of live registers at the moment is greater than the number of allocatable registers,
 	// we need to spill some.
 	int numLive = intNodeListLength(liveList);
 	if(numLive > allocatableRegs) {
@@ -831,17 +833,72 @@ void chooseAndSpill(int instr, int allocatableRegs, int *currOffset, regNode hea
 			// need to iterate here first)
 			currInt = currInt->next;
 			// delink the current node from liveList
-			deleteIntNode(id, &liveList);
+			deleteIntNode(id, liveListPtr);
 		}
 		// otherwise, keep iterating through
 		else{
 			currInt = currInt->next;
 		}
 	}
+	// free sortedArr
+	free(sortedArr);
+	return;
 }
 
 void chooseAndAllocate(int instr, int availableRegs, PHYS_STATUS *physStatuses, regNode head, intNode *liveListPtr) {
-
+	intNode liveList = *liveListPtr;
+	intNode currInt = liveList;
+	// first pass: delink and release physical registers for any virtual registers no longer live
+	while(currInt != NULL) {
+		// obtain the register corresponding to this intNode
+		regNode currReg = getRegNode(currInt->val, head);
+		// if its last instruction equals this instruction (live on exit)
+		if(currReg->lastInstr == instr) {
+			// obtain the physical register ID of the regNode
+			uint physId = currReg->physId;
+			// delink the intNode
+			int id = currInt->val;
+			currInt = currInt->next;
+			deleteIntNode(id, liveListPtr);
+			// update the availability of the physical register
+			int physIndex = physId + 3;
+			physStatuses[physIndex] = FREE;
+		}
+		// otherwise, iterate as normal
+		else{
+			currInt = currInt->next;
+		}
+	}
+	// Second pass: allocate physical registers to the remaining virtual registers
+	currInt = liveList;
+	while(currInt != NULL) {
+		// obtain current register
+		regNode currReg = getRegNode(currInt->val, head);
+		// if no physical register has been yet allocated
+		if(currReg->status == NONE) {
+			// look for the next physical register available
+			int index = 0;
+			while(index < availableRegs) {
+				if(physStatuses[index] == FREE) {
+					break;
+				}
+				index += 1;
+			}
+			// exit on failure if we haven't found any free physical registers
+			if(index == availableRegs) {
+				printf("ERROR in chooseAndAllocate()! Couldn't find free, allocatable physical registers!\n");
+				exit(EXIT_FAILURE);
+			}
+			// set the physID to index + 3 (because register allocation starts at r3)
+			currReg->physId = index + 3;
+			currReg->status = PHYS;
+			// mark the physical register as not currently free
+			physStatuses[index] = USED;
+		}
+		// iterate either way
+		currInt = currInt->next;
+	}
+	return;
 }
 
 int ascCompLive(const void *in1, const void *in2) {
@@ -883,14 +940,65 @@ int ascCompLive(const void *in1, const void *in2) {
 void topDownLive(int numRegisters, FILE *file) {
 	// First, obtain the linked list of regNodes from the file.
 	regNode head = genRegList(file);
-	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
-	// ascending order of occurrences.
-	regNode *sortedRegs = sortedRegArr(head, LIVE);
-	
-
-	// SKELETON BELOW FOR INPUT! Do NOT use as-is, modify accordingly given how we allocate physical registers.
-	// Getting started: let's go through the file and perform top-down operations on
-	// every non-blank line.
+	// get the number of virtual registers (excluding r0)
+	int numVirtual = regNodeListLength(head);
+	// if we have enough physical registers to not need real allocation, give each regNode (besides for r0)
+	// a physical register
+	if(numRegisters >= numVirtual) {
+		uint currId = 3;
+		int count = 0;
+		regNode currReg = head;
+		while(count < numVirtual) {
+			if(currReg->id != 0) {
+				currReg->status = PHYS;
+				currReg->physId = currId;
+				currId += 1;
+				count += 1;
+			}
+			currReg = currReg->next;
+		}
+	}
+	// otherwise, perform live-range-dependent algorithm
+	else{
+		// Iterate through the file, instruction by instruction, and perform the spill and allocation
+		// operations accordingly. We only iterate through the file this time for the purpose of counting
+		// instructions, not actually reading the input.
+		ssize_t read = 0;
+		ssize_t len = 0;
+		char *currLine = NULL;
+		// keep track of current instruction
+		int currInstr = 0;
+		// number of allocatable registers
+		int allocatableRegs = numRegisters - 2;
+		// current available offset for spilling
+		int currOffset = -4;
+		// list of live registers (by ID)
+		intNode liveList = NULL;
+		// initialize a list of PHYS_STATUS enums that keep track of the availability of allocatable registers
+		PHYS_STATUS physStatuses[allocatableRegs];
+		int i;
+		for(i = 0; i < allocatableRegs; i++) {
+			physStatuses[i] = FREE;
+		}
+		// Let's go to each non-blank line and fetch it.
+		while(read = getline(&currLine, &len, file) != -1) {
+			// Ignore a blank line or a comment.
+			if(strlen(currLine) != 1 && currLine[0] != '/') {
+				// spill and allocate for the current line
+				chooseAndSpill(currInstr, allocatableRegs, &currOffset, head, &liveList);
+				chooseAndAllocate(currInstr, allocatableRegs, physStatuses, head, &liveList);
+				// increment the instruction
+				currInstr += 1;
+			}
+			// free the current line's memory, and set the pointer to null
+			free(currLine);
+			currLine = NULL;
+		}
+		// Be kind: Rewind (the file pointer)!
+		rewind(file);
+	}
+	// Just like the normal top-down allocator, we go through line-by-line and perform the
+	// operations for that given line
 	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
@@ -908,12 +1016,8 @@ void topDownLive(int numRegisters, FILE *file) {
 	}
 	// Be kind: Rewind (the file pointer)!
 	rewind(file);
-
-
 	// free the structs of the regNode list
 	freeRegNode(head);
-	// free the sorted register array (only an array of pointers, not structs):
-	free(sortedRegs);
 	return;
 }
 
