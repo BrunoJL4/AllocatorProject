@@ -186,11 +186,6 @@ int regNodeListLength(regNode head);
 (if the target is at head). */
 void deleteIntNode(int target, intNode *headPtr);
 
-/* Given an instruction number, this function goes through the list of regNodes and adds them to the liveList
-if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
-and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
-void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr);
-
 /* Adds an intNode to the end of the list, which is pointed to by intHeadPtr. */
 void addIntNode(int val, intNode *intHeadPtr);
 
@@ -211,6 +206,11 @@ int descComp(const void *in1, const void *in2);
 
 
 /* Lecture top-down exclusive functions below. */
+
+/* Given an instruction number, this function goes through the list of regNodes and adds them to the liveList
+if they're not already there. It then, if necessary, decides which registers to spill at that instruction,
+and changes their status/location accordingly. Finally, it removes the spilled registers from the list. */
+void chooseAndSpill(int instr, int availableRegs, int *currOffset, regNode head, intNode *liveListPtr);
 
 /* Compares the two regNodes such that a qsort()'ed list will be set in ascending order
 of number of occurrences. Live range will be used as a tie-breaker- the longer live range
