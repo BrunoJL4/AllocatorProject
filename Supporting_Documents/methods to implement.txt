@@ -1,3 +1,12 @@
 Done with lecture top-down! Let's move to bottom-up.
 
-Go through line-by-line, and for the input, 
+Unlike before, where we'd first parse regNode properties in one pass
+and perform output in the other, we actually do both in one pass.
+More specifically, we
+
+1) Parse information about the current line from the regNodes, in order to determine
+which registers are spilled/which are allocated to a physical register/which
+physical register is used.
+2) Perform the fetch operations accordingly (if applicable)
+3) THEN perform the actual output of the line the same way as before.
+

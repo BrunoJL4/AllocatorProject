@@ -203,7 +203,7 @@ void topDownSimple(int numRegisters, FILE *file);
 
 /* Performs the given operations for simple top-down allocation, given the current line.
 This includes spilling, fetching, and standard output. */
-void opSimpleTD(char *currLine, regNode head);
+void opTD(char *currLine, regNode head);
 
 /* Compares the two regNodes such that a qsort()'ed list will be set in descending order
 of occurrences. Returns -1 if n1 has more occurrences than n2, 0 if they're the same,

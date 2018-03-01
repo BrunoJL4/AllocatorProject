@@ -483,17 +483,14 @@ int descComp(const void *in1, const void *in2) {
 	int n2Count = intNodeListLength(n2->firstOcc);
 	// return -1 if first register has more occs than second
 	if(n1Count > n2Count) {
-//		printf("r%d > r%d!\n\n", n1->id, n2->id);
 		return -1;
 	}
 	// return 0 if they have same number of occs
 	else if(n1Count == n2Count) {
-//		printf("r%d == r%d!\n\n", n1->id, n2->id);
 		return 0;
 	}
 	// return 1 if first register has fewer occs than second
 	else {
-//		printf("r%d < r%d!\n\n", n1->id, n2->id);
 		return 1;
 	}
 }
@@ -560,13 +557,13 @@ void topDownSimple(int numRegisters, FILE *file) {
 	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
-	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
+	// Let's go to each non-blank line and fetch it. Then use opTD() to process
 	// the line and provide the according output.
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
 			// perform the operation(s) for this line
-			opSimpleTD(currLine, head);
+			opTD(currLine, head);
 		}
 		// free the current line's memory, and set the pointer to null
 		free(currLine);
@@ -583,7 +580,7 @@ void topDownSimple(int numRegisters, FILE *file) {
 	return;
 }
 
-void opSimpleTD(char *currLine, regNode head) {
+void opTD(char *currLine, regNode head) {
 	// First, find the index of the initial non-blank character.
 	uint currIndex = 0;
 	uint firstIndex = 0;
@@ -1007,13 +1004,13 @@ void topDownLive(int numRegisters, FILE *file) {
 	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
-	// Let's go to each non-blank line and fetch it. Then use opSimpleTD() to process
+	// Let's go to each non-blank line and fetch it. Then use opTD() to process
 	// the line and provide the according output.
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
 			// perform the operation(s) for this line
-			opSimpleTD(currLine, head);
+			opTD(currLine, head);
 		}
 		// free the current line's memory, and set the pointer to null
 		free(currLine);
