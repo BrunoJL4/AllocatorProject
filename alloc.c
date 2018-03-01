@@ -779,16 +779,12 @@ void opSimpleTD(char *currLine, regNode head) {
 /* Top-down allocation (lecture, or LIVE version) support functions defined here. */
 
 void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr) {
-//	printf("running chooseAndSpill() for instruction %d\n", instr);
 	// add any node to liveList which became live at this instruction, AND which isn't already spilled,
 	// AND which isn't r0
 	intNode liveList = *liveListPtr;
 	regNode currReg = head;
 	while(currReg != NULL) {
-		//printf("currReg->firstInstr is: %d\n", currReg->firstInstr);
-		//printf("currReg->lastInstr is: %d\n", currReg->lastInstr);
 		if(currReg->status != MEM && currReg->id != 0 && currReg->firstInstr == instr) {
-//			printf("Adding intNode in chooseAndSpill for register: r%d\n", currReg->id);
 			addIntNode(currReg->id, &liveList);
 		}
 		currReg = currReg->next;
@@ -796,11 +792,9 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 	// if the number of live registers at the moment is greater than the number of allocatable registers,
 	// we need to spill some.
 	int numLive = intNodeListLength(liveList);
-//	printf("number of live registers at this instruction: %d\n", numLive);
 	if(numLive > allocatableRegs) {
 		// number of registers that must be spilled
 		int numToSpill = numLive - allocatableRegs;
-//		printf("need to spill: %d registers\n", numToSpill);
 		// array of registers sorted in ascending order of occurrences, tie-breaker live range
 		regNode *sortedArr = sortedRegArr(head, LIVE);
 		// iterate through sortedArr numToSpill times.
@@ -811,8 +805,6 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 			// if the register in question matches one in liveList, change its properties to indicate
 			// that it's spilled.
 			if(intNodeExists(sortedArr[index]->id, liveList) == 1) {
-//				printf("Spilling r%d\n in chooseAndSpill()!\n", sortedArr[index]->id);
-//				printf("Providing offset: %d\n", nextOffset);
 				sortedArr[index]->status = MEM;
 				sortedArr[index]->offset = nextOffset;
 				// make the physical register free if applicable ("you no longer get a physical register")
@@ -840,7 +832,6 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 		// if the status is MEM:
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == MEM) {
-//			printf("Delinking r%d from liveList in chooseAndSpill()!\n", currInt->val);
 			// capture this intNode's value
 			int id = currInt->val;
 			// iterate currInt to the next available node (could end up freeing currInt,
@@ -859,7 +850,6 @@ void chooseAndSpill(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, i
 }
 
 void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses, regNode head, intNode *liveListPtr) {
-//	printf("running chooseAndAllocate() for instruction %d\n", instr);
 	intNode liveList = *liveListPtr;
 	intNode currInt = liveList;
 	// first pass: delink and release physical registers for any virtual registers no longer live
@@ -868,7 +858,6 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 		regNode currReg = getRegNode(currInt->val, head);
 		// if its last instruction equals this instruction (live on exit)
 		if(currReg->lastInstr == instr) {
-//			printf("Delinking and freeing up physical register r%d from virtual r%d\n", currReg->physId, currReg->id);
 			// obtain the physical register ID of the regNode
 			uint physId = currReg->physId;
 			// delink the intNode
@@ -894,7 +883,6 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 			// look for the next physical register available
 			int index = 0;
 			while(index < allocatableRegs) {
-//				printf("physStatuses[%d] == %d\n", index, physStatuses[index]);
 				if(physStatuses[index] == FREE) {
 					break;
 				}
@@ -905,7 +893,6 @@ void chooseAndAllocate(int instr, int allocatableRegs, PHYS_STATUS *physStatuses
 				printf("ERROR in chooseAndAllocate()! Couldn't find free, allocatable physical registers!\n");
 				exit(EXIT_FAILURE);
 			}
-//			printf("Giving physId %d to virtual register r%d in chooseAndAllocate()!\n", index + 3, currReg->id);
 			// set the physID to index + 3 (because register allocation starts at r3)
 			currReg->physId = index + 3;
 			currReg->status = PHYS;

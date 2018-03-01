@@ -6,6 +6,13 @@ rm test*
 make clean
 make 
 echo "Creating test files for LECTURE top-down allocation"
+# Create simple-TD test files- 3 registers
+./alloc 3 t Test_Blocks/block1.i >> test1-3.i
+./alloc 3 t Test_Blocks/block2.i >> test2-3.i
+./alloc 3 t Test_Blocks/block3.i >> test3-3.i
+./alloc 3 t Test_Blocks/block4.i >> test4-3.i
+./alloc 3 t Test_Blocks/block5.i >> test5-3.i
+./alloc 3 t Test_Blocks/block6.i >> test6-3.i
 # Create simple-TD test files- 5 registers
 ./alloc 5 t Test_Blocks/block1.i >> test1-5.i
 ./alloc 5 t Test_Blocks/block2.i >> test2-5.i
@@ -31,6 +38,7 @@ echo "Creating test files for LECTURE top-down allocation"
 # Test each of these in waves: original block, 5-reg, 10-reg, and 20-reg.
 echo "Performing test 1!"
 ./ILOC_Simulator/sim -i 1024 1 1 < Test_Blocks/block1.i
+./ILOC_Simulator/sim -i 1024 1 1 < test1-3.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test1-5.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test1-10.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test1-20.i
@@ -38,6 +46,7 @@ echo "Test 1 finished!"
 
 echo "Performing test 2!"
 ./ILOC_Simulator/sim < Test_Blocks/block2.i
+./ILOC_Simulator/sim < test2-3.i
 ./ILOC_Simulator/sim < test2-5.i
 ./ILOC_Simulator/sim < test2-10.i
 ./ILOC_Simulator/sim < test2-20.i
@@ -45,6 +54,7 @@ echo "Test 2 finished!"
 
 echo "Performing test 3!"
 ./ILOC_Simulator/sim -i 1024 1 1 < Test_Blocks/block3.i
+./ILOC_Simulator/sim -i 1024 1 1 < test3-3.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test3-5.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test3-10.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test3-20.i
@@ -52,6 +62,7 @@ echo "Test 3 finished!"
 
 echo "Performing test 4!"
 ./ILOC_Simulator/sim -i 1024 1 1 < Test_Blocks/block4.i
+./ILOC_Simulator/sim -i 1024 1 1 < test4-3.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test4-5.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test4-10.i
 ./ILOC_Simulator/sim -i 1024 1 1 < test4-20.i
@@ -59,6 +70,7 @@ echo "Test 4 finished!"
 
 echo "Performing test 5!"
 ./ILOC_Simulator/sim -i 1024 3 5 < Test_Blocks/block5.i
+./ILOC_Simulator/sim -i 1024 3 5 < test5-3.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test5-5.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test5-10.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test5-20.i
@@ -66,6 +78,7 @@ echo "Test 5 finished!"
 
 echo "Performing test 6!"
 ./ILOC_Simulator/sim -i 1024 3 5 < Test_Blocks/block6.i
+./ILOC_Simulator/sim -i 1024 3 5 < test6-3.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test6-5.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test6-10.i
 ./ILOC_Simulator/sim -i 1024 3 5 < test6-20.i
