@@ -43,7 +43,8 @@ or in a physical register. DEFAULT if the corresponding struct was just initiali
 typedef enum REG_STATUS_ENUM {
 	MEM = 0,
 	PHYS = 1,
-	NONE = 2
+	NONE = 2,
+	DEAD = 3
 } REG_STATUS;
 
 /* The enum type for top-down operations- simple or "live-considering". */
@@ -88,7 +89,7 @@ typedef struct registerNode {
 	// 999 by default.
 	uint physId;
 	// the current offset of this register's data from r0, if applicable.
-	// -9001 by default.
+	// 9001 by default.
 	int offset;
 	// the next regNode in the linked list. NULL by default.
 	struct registerNode *next;
@@ -96,6 +97,8 @@ typedef struct registerNode {
 	int firstInstr;
 	// the last instruction this register is live in 
 	int lastInstr;
+	// the next instruction this register is live in (bottom-up only)
+	int nextUse;
 } *regNode;
 
 

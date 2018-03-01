@@ -29,8 +29,11 @@ regNode createRegNode(uint id) {
 		newNode->physId = 999;
 	}
 	newNode->firstOcc = NULL;
-	newNode->offset = -9001;
+	newNode->offset = 9001;
 	newNode->next = NULL;
+	newNode->firstInstr = -1;
+	newNode->lastInstr = -1;
+	newNode->nextUse = -1;
 	return newNode;
 }
 

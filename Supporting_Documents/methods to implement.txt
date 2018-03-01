@@ -4,9 +4,43 @@ Unlike before, where we'd first parse regNode properties in one pass
 and perform output in the other, we actually do both in one pass.
 More specifically, we
 
-1) Parse information about the current line from the regNodes, in order to determine
-which registers are spilled/which are allocated to a physical register/which
-physical register is used.
-2) Perform the fetch operations accordingly (if applicable)
-3) THEN perform the actual output of the line the same way as before.
+	1) Parse information about which registers are currently live (generate a liveList).
+	2) Perform spill code in order to "free" up registers and accordingly update the liveList, until
+	we have enough free physical registers to accomodate the demands. Do note that unlike before,
+	the status and physId members of a regNode are NOT static. However, *the offset assigned never changes*.
+	3) Perform the fetch operations accordingly (if applicable) with the new state of physical registers.
+	4) THEN perform the actual output of the line the same way as before, but with the updated
+	properties of the regNodes.
+
+at each line.
+
+Note that we don't have any feasible registers for this approach. Rather, we work "ad-hoc" and treat
+every register as potentially being used in an operation/having its value spilled dynamically.
+
+It might be helpful to have a "nextUse" member for the regNode struct that's updated at every line to
+indicate the next occurrence where it's used, given a certain instruction. Similarly, we could sort
+regNodes by nextUse such that the later nextUse appears earlier for eviction (spilling).
+
+Support functions I'll need:
+
+1) updateNextInstr(int currInstr, regNode head): update the nextUse for each of the regNodes
+in the list, given a starting instruction to compare to. nextUse is set to -1 if there isn't
+another occurrence after the current instruction (including if the current instruction is
+the last occurrence).
+
+2) nextComp(const void *in1, const void *in2): compares two regNodes to determine order of eviction
+(spilling). If in1's next occurrence equals in2's next occurrence, return 0. If in1's next occurrence
+is greater than in2's next occurrence, OR if in1's next occurrence is -1, then return -1.
+If in1's next occurrence is less than in2's next occurrence, OR if in2's next occurrence is -1,
+return 1.
+
+3) freeAndSpill(int instr, int *allocatableRegsPtr, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr):
+this works sort of like chooseAndSpill, but a key difference is that it can't change the offset of a regNode that's being spilled
+if the offset isn't the default (9001). Also, it decides order of eviction using nextComp(), as we spill registers by using
+the next use as a heuristic. Finally, if a node is permanently done being used, it changes the status to (new enum) DEAD
+(which could end up being useful). It otherwise does the following, like chooseAndSpill():
+	a) Updates liveList with register ID's that occur for the first time on this line.
+	b) Spills as many registers as needed in order to increase the number of available registers to meet new demands.
+
+4) fetchAndAllocate(int instr, int *allocatableRegsPtr, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr):
 
