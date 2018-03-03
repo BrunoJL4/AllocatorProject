@@ -1084,26 +1084,56 @@ int nextComp(const void *in1, const void *in2) {
 	}
 }
 
+void setActiveStatus(int reg, regNode head, REG_TYPE type) {
+	regNode targetNode = getRegNode(reg, head);
+	// exit on failure on error
+	if(targetNode == NULL) {
+		printf("Error in setActiveStatus for r%d: cannot find in the regNode list!\n", reg);
+		exit(EXIT_FAILURE);
+	}
+	if(targetNode->status == PHYS) {
+		if(type == IN) {
+			targetNode->status = PHYS_ACTIVE_INPUT;
+		}
+		else{
+			targetNode->status = PHYS_ACTIVE_OUTPUT;
+		}
+	}
+	else{
+		if(type == IN) {
+			targetNode->status = MEM_ACTIVE_INPUT;
+		}
+		else{
+			targetNode->status = MEM_ACTIVE_OUTPUT;
+		}
+	}
+}
+
 void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
 	// perform the status assignments based off of the type of the operation
 	if(op == LOADI) {
-		int outReg = opReg1;
-		
+		int outRegId = opReg1;
+		setActiveStatus(outRegId, head, OUT);
 	}
 	else if(op == LOAD) {
 		int inReg = opReg1;
 		int outReg = opReg2;
-
+		setActiveStatus(inReg, head, IN);
+		setActiveStatus(outReg, head, OUT);
 	}
 	else if(op == ST0RE) {
 		int inReg = opReg1;
 		int outReg = opReg2;
-
+		setActiveStatus(inReg, head, IN);
+		setActiveStatus(outReg, head, OUT);
 	}
 	else if(op == ADD || op == SUB || op == MULT || op == LSHIFT || op == RSHIFT) {
 		int inReg1 = opReg1;
 		int inReg2 = opReg2;
 		int outReg = opReg3;
+		setActiveStatus(inReg1, head, IN);
+		setActiveStatus(inReg2, head, IN);
+		setActiveStatus(outReg, head, OUT);
 	}
 	else if(op == OUTPUT) {
 		// do nothing, since we have no registers to worry about

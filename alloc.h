@@ -64,6 +64,12 @@ typedef enum PHYS_STATUS_ENUM {
 	FREE = 1
 } PHYS_STATUS;
 
+/* The enum type indicating whether a register is an input or output. */
+typede enum REG_TYPE_ENUM {
+	IN = 0,
+	OUT = 1
+} REG_TYPE;
+
 /* End enum definitions. */
 
 /* General struct definitions included below. */
@@ -266,12 +272,14 @@ void topDownLive(int numRegs, FILE *file);
 if there are no occurrences left after the current instruction. */
 void updateNextInstr(int currInstr, regNode head);
 
-
 /* Compares two regNodes to determine order of eviction (spilling). If in1's next occurrence equals in2's next
 occurrence, return 0. If in1's next occurrence is greater than in2's next occurrence, OR if in1's next occurrence
 is -1, then return -1. If in1's next occurrence is less than in2's next occurrence, OR if in2's next occurrence is -1,
 return 1. */
 int nextComp(const void *in1, const void *in2);
+
+/* Updates the target virtual register's regNode with the given status. */
+void setActiveStatus(int reg, regNode head, REG_TYPE type);
 
 /* Updates the liveList given the registers that are ACTIVE on a line, and the type of the operation. 
 Also updates the ACTIVE status of those registers' regNodes.*/
