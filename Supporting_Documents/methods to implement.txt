@@ -5,12 +5,7 @@ and perform output in the other, we actually do both in one pass.
 More specifically, we
 
 	1) Parse information about which registers are currently live (generate a liveList).
-	2) Perform spill code in order to "free" up registers and accordingly update the liveList, until
-	we have enough free physical registers to accomodate the demands. Do note that unlike before,
-	the status and physId members of a regNode are NOT static. However, *the offset assigned never changes*.
-	3) Perform the fetch operations accordingly (if applicable) with the new state of physical registers.
-	4) THEN perform the actual output of the line the same way as before, but with the updated
-	properties of the regNodes.
+	2) Spill, fetch, and allocate.
 
 at each line.
 
@@ -34,13 +29,62 @@ is greater than in2's next occurrence, OR if in1's next occurrence is -1, then r
 If in1's next occurrence is less than in2's next occurrence, OR if in2's next occurrence is -1,
 return 1.
 
-3) freeAndSpill(int instr, int *allocatableRegsPtr, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr):
-this works sort of like chooseAndSpill, but a key difference is that it can't change the offset of a regNode that's being spilled
-if the offset isn't the default (9001). Also, it decides order of eviction using nextComp(), as we spill registers by using
-the next use as a heuristic. Finally, if a node is permanently done being used, it changes the status to (new enum) DEAD
-(which could end up being useful). It otherwise does the following, like chooseAndSpill():
-	a) Updates liveList with register ID's that occur for the first time on this line.
-	b) Spills as many registers as needed in order to increase the number of available registers to meet new demands.
+We go into the upcoming logic with each of the following:
+	1) status of each physical register.
+	2) the operation type AND the <= 3 registers and constant.
+	3) the list of live registers.
+	4) the linked list of regNodes.
+	5) the current line.
+	6) the latest offset allocated.
+	7) the total number of physical registers.
 
-4) fetchAndAllocate(int instr, int *allocatableRegsPtr, PHYS_STATUS *physStatuses, int *currOffset, regNode head, intNode *liveListPtr):
+Sequence of events each line:
 
+Part 1: Figure out which registers are active at the moment.
+I) Update liveList with the registers that show up in the instruction, and update the registers for cases A)1) and B)1).
+	A) For the input register(s) (if any), we have two scenarios:
+		1) PHYS_ACTIVE_INPUT: The input's virtual register is already present in a physical register, OR we've
+		added it into liveList and given it an available physical register.
+		2) MEM_ACTIVE_INPUT: The virtual register is spilled, and must be fetched.
+	B) For the output register, we have two scenarios:
+		1) PHYS_ACTIVE_OUTPUT: The output's virtual register is already present in a physical register, OR we've
+		added it into liveList and given it an available physical register.
+		2) MEM_ACTIVE_OUTPUT: The output's virtual register is spilled, and must be fetched.
+An "ACTIVE" status is given if the input/output register(s) was already present in liveList with a status of PHYS.
+A "MEM" status is given if the input/output register(s) was NOT yet present in liveList and needed to be added in.
+
+Part 2: Spill the proper number of registers (if necessary) AND assign them in the same step.
+I) Get the sorted list of registers, by descending order of next instruction (priority at
+beginning if never used again). 
+II) To determine the number of registers we need to spill, we'd look at the number of registers in
+liveList with status "MEM_ACTIVE_INPUT" or "MEM_ACTIVE_OUTPUT". These need to be fetched into physical registers.
+III) Make a "numToSpill" equal to what's mentioned above. Free up physical registers from the sorted
+list of registers (which are PHYS, but not PHYS_ACTIVE_INPUT!!!)
+ by removing the regNodes from liveList, setting the regNodes to MEM, and setting the status of the physical register
+accordingly. We obviously need to call spillRegister() in this part as well.
+If they have a default offset, assign them the current offset and then decrement it.
+Do so either until we run out of physical registers, or until we've spilled enough of them.
+Whichever comes first.
+IV) Give the MEM_ACTIVE_INPUT registers the first pick of open physical registers. Set their physId's accordingly
+and un-free the physical registers. Perform the fetch operations for each using fetchRegister() (assuming
+it doesn't change their status and whatnot). Set their statuses to PHYS.
+V) This step determines how to give the output register (if necessary) a physical register.
+If numToSpill is greater than 0, it must be 1 (meaning that we have two total allocatable registers).
+If it's > 1, return an error and exit. If it's 0, we convert the present PHYS_ACTIVE_OUTPUT register to PHYS.
+If we don't find it, return an error and exit.
+VI) If the previous step had a numToSpill == 1, then find the register whose status is MEM_ACTIVE_OUTPUT.
+Give it a status of PHYS and set its physId to the physId of the first input register. If they're both
+-1, return an error.
+VII) Convert any of the MEM_ACTIVE_INPUT's to PHYS at this point, for the next cycle.
+
+Part 3: output the operation given the virtual register ID's, converting them to physical register ID's! 
+
+The sequence of events goes as follows:
+
+spill --> fetch --> operation-
+^----------------------------l
+
+This seems counter-intuitive at first, but because we shouldn't be spilling in the first round, it's really:
+
+fetch --> operation --> spill-
+^----------------------------l 

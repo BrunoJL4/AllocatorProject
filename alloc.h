@@ -39,12 +39,16 @@ typedef enum OP_TYPE_ENUM {
 } OP_TYPE;
 
 /* The enum types that tell us whether a virtual register is currently spilled in memory,
-or in a physical register. DEFAULT if the corresponding struct was just initialized. */
+or in a physical register. NONE if the corresponding struct was just initialized. */
 typedef enum REG_STATUS_ENUM {
 	MEM = 0,
 	PHYS = 1,
 	NONE = 2,
-	DEAD = 3
+	DEAD = 3,
+	PHYS_ACTIVE_INPUT = 4,
+	MEM_ACTIVE_INPUT = 5,
+	PHYS_ACTIVE_OUTPUT = 6,
+	MEM_ACTIVE_OUTPUT = 7
 } REG_STATUS;
 
 /* The enum type for top-down operations- simple or "live-considering". */
