@@ -1084,6 +1084,18 @@ int nextComp(const void *in1, const void *in2) {
 	}
 }
 
+void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
+
+}
+
+void spillFetchAssignBU(intNode liveList, regNode head, regNode *sortedRegArr, PHYS_STATUS *physStatuses, int &currOffsetPtr) {
+
+}
+
+void outputBU(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
+	
+}
+
 void bottomUp(int numRegisters, FILE *file) {
 	// First, obtain the linked list of regNodes from the file.
 	regNode head = genRegList(file);
