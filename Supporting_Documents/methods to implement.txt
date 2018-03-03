@@ -43,7 +43,7 @@ Sequence of events each line:
 NOTE: r0's status should remain PHYS and have the same physId no matter what!
 
 Part 1: Figure out which registers are active at the moment.
-I) Update liveList with the registers that show up in the instruction, and update the registers for cases A)1) and B)1).
+I) Update liveList with the registers that show up in the instruction, and update the registers' ID's if relevant for cases A)1) and B)1).
 	A) For the input register(s) (if any), we have two scenarios:
 		1) PHYS_ACTIVE_INPUT: The input's virtual register is already present in a physical register, OR we've
 		added it into liveList and given it an available physical register.

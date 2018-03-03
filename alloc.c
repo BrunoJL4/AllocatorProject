@@ -1085,7 +1085,33 @@ int nextComp(const void *in1, const void *in2) {
 }
 
 void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
+	// perform the status assignments based off of the type of the operation
+	if(op == LOADI) {
+		int outReg = opReg1;
+		
+	}
+	else if(op == LOAD) {
+		int inReg = opReg1;
+		int outReg = opReg2;
 
+	}
+	else if(op == ST0RE) {
+		int inReg = opReg1;
+		int outReg = opReg2;
+
+	}
+	else if(op == ADD || op == SUB || op == MULT || op == LSHIFT || op == RSHIFT) {
+		int inReg1 = opReg1;
+		int inReg2 = opReg2;
+		int outReg = opReg3;
+	}
+	else if(op == OUTPUT) {
+		// do nothing, since we have no registers to worry about
+		return;
+	}
+	else{
+		printf("Error in updateLiveListBottom! Invalid operation type given: %d\n", op);
+	}
 }
 
 void spillFetchAssignBU(intNode liveList, regNode head, regNode *sortedRegArr, PHYS_STATUS *physStatuses, int &currOffsetPtr) {
@@ -1093,7 +1119,7 @@ void spillFetchAssignBU(intNode liveList, regNode head, regNode *sortedRegArr, P
 }
 
 void outputBU(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
-	
+
 }
 
 void bottomUp(int numRegisters, FILE *file) {
