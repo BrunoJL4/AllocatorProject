@@ -31,7 +31,7 @@ return 1.
 
 We go into the upcoming logic with each of the following:
 	1) status of each physical register.
-	2) the operation type AND the <= 3 registers and constant.
+	2) the operation type AND the <= 3 involved virtual registers and constant.
 	3) the list of live registers.
 	4) the linked list of regNodes.
 	5) the current line.
@@ -39,6 +39,8 @@ We go into the upcoming logic with each of the following:
 	7) the total number of physical registers.
 
 Sequence of events each line:
+
+NOTE: r0's status should remain PHYS and have the same physId no matter what!
 
 Part 1: Figure out which registers are active at the moment.
 I) Update liveList with the registers that show up in the instruction, and update the registers for cases A)1) and B)1).

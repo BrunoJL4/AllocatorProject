@@ -380,6 +380,10 @@ regNode *sortedRegArr(regNode head, TD_TYPE type) {
 		// Sort midArr using qsort() and descCompLive.
 		qsort((void *) midArr, listLength - 1, sizeof(regNode), ascCompLive);
 	}
+	else if(type == BOTTOM) {
+		// Sort midArr using qsort() and nextComp.
+		qsort((void*) midArr, listLength - 1, sizeof(regNode), nextComp);
+	}
 	else{
 		printf("ERROR in sortedRegArr! Invalid flag: %d\n", type);
 		exit(EXIT_FAILURE);
@@ -1081,6 +1085,47 @@ int nextComp(const void *in1, const void *in2) {
 }
 
 void bottomUp(int numRegisters, FILE *file) {
+	// First, obtain the linked list of regNodes from the file.
+	regNode head = genRegList(file);
+	// Next, obtain a dynamically-allocated array of regNodes that's sorted by
+	// next occurrence/dead status
+	regNode *sortedRegs = sortedRegArr(head, BOTTOM);
+	// create a list of statuses for the physical registers. we use ALL of the physical registers.
+	PHYS_STATUS physStatuses[numRegisters];
+	// all physical registers are FREE by default
+	int i;
+	for(i = 0; i < numRegisters; i++) {
+		physStatuses[i] = FREE;
+	}
+	// offsets are provided starting at -4
+	int currOffset = -4;
+	// declare the list of live registers (intNodes store id's)
+	intNode liveList = NULL;
+	// Getting started: let's go through the file and perform bottom-up allocation on each line.
+	ssize_t read = 0;
+	ssize_t len = 0;
+	char *currLine = NULL;
+	// Let's go to each non-blank line and fetch it. Then use opTD() to process
+	// the line and provide the according output.
+	while(read = getline(&currLine, &len, file) != -1) {
+		// Ignore a blank line or a comment.
+		if(strlen(currLine) != 1 && currLine[0] != '/') {
+			// perform the operation(s) for this line
+			
+		}
+		// free the current line's memory, and set the pointer to null
+		free(currLine);
+		currLine = NULL;
+	}
+	// Be kind: Rewind (the file pointer)!
+	rewind(file);
+
+
+	// free the structs of the regNode list
+	freeRegNode(head);
+	// free the sorted register array (only an array of pointers, not structs):
+	free(sortedRegs);
+	return;
 
 }
 

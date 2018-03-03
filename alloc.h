@@ -54,7 +54,8 @@ typedef enum REG_STATUS_ENUM {
 /* The enum type for top-down operations- simple or "live-considering". */
 typedef enum TD_TYPE_ENUM {
 	SIMPLE = 0,
-	LIVE = 1
+	LIVE = 1,
+	BOTTOM = 2
 } TD_TYPE;
 
 /* The enum type for physical register availability. Used in live-range dependent top-down allocation.*/
