@@ -261,5 +261,19 @@ void topDownLive(int numRegs, FILE *file);
 
 /* Bottom-up exclusive functions below. */
 
+/* Updates the nextInstr member for every regNode in the list indicated by head. Assigns nextInstr to -1
+if there are no occurrences left after the current instruction. */
+void updateNextInstr(int currInstr, regNode head);
+
+
+/* Compares two regNodes to determine order of eviction (spilling). If in1's next occurrence equals in2's next
+occurrence, return 0. If in1's next occurrence is greater than in2's next occurrence, OR if in1's next occurrence
+is -1, then return -1. If in1's next occurrence is less than in2's next occurrence, OR if in2's next occurrence is -1,
+return 1. */
+int nextComp(const void *in1, const void *in2);
+
+/* Performs bottom-up allocation given the number of registers from the user, and the
+file pointer from their file. Output is given to stdout. */
+void bottomUp(int numRegisters, FILE *file);
 
 #endif

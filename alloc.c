@@ -1028,8 +1028,37 @@ void topDownLive(int numRegisters, FILE *file) {
 
 /* Bottom-up allocation support functions defined here. */
 
+void updateNextInstr(int currInstr, regNode head) {
+	regNode currNode = head;
+	// iterate through each regNode
+	while(currNode != NULL) {
+		// for each intNode, iterate through
+		intNode currInt = currNode->firstOcc;
+		while(currInt != NULL) {
+			// if we find an occurrence that >= currInstr, update nextInstr to that occ and break
+			if(currInt->val >= currInstr) {
+				currNode->nextInstr = currInt->val;
+				break;
+			}
+			// keep iterating
+			currInt = currInt->next;
+		}
+		// if we never found such an intNode, the register is done, so set nextInstr to -1
+		if(currInt == NULL) {
+			currNode->nextInstr = -1;
+		}
+		// iterate to the next node
+		currNode = currNode->next;
+	}
+}
 
+int nextComp(const void *in1, const void *in2) {
 
+}
+
+void bottomUp(int numRegisters, FILE *file) {
+
+}
 
 
 /* main() function receives arguments as described in the assignment spec,
