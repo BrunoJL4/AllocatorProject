@@ -273,6 +273,17 @@ is -1, then return -1. If in1's next occurrence is less than in2's next occurren
 return 1. */
 int nextComp(const void *in1, const void *in2);
 
+/* Updates the liveList given the registers that are ACTIVE on a line, and the type of the operation. 
+Also updates the ACTIVE status of those registers' regNodes.*/
+void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3);
+
+/* Spills and fetches registers as necessary for the current operation, using the next-occurrence format. This includes changing
+the properties of the registers and providing the stdout output for fetch/spill operations.*/
+void spillFetchAssignBU(intNode liveList, regNode head, regNode *sortedRegArr, PHYS_STATUS *physStatuses, int &currOffsetPtr);
+
+/* Performs the actual operational output for a given line, without changing the properties of the registers involved. */
+void outputBU(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant);
+
 /* Performs bottom-up allocation given the number of registers from the user, and the
 file pointer from their file. Output is given to stdout. */
 void bottomUp(int numRegisters, FILE *file);

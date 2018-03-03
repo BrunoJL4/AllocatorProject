@@ -1119,8 +1119,6 @@ void bottomUp(int numRegisters, FILE *file) {
 	}
 	// Be kind: Rewind (the file pointer)!
 	rewind(file);
-
-
 	// free the structs of the regNode list
 	freeRegNode(head);
 	// free the sorted register array (only an array of pointers, not structs):

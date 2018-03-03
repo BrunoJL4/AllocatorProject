@@ -54,6 +54,12 @@ I) Update liveList with the registers that show up in the instruction, and updat
 		2) MEM_ACTIVE_OUTPUT: The output's virtual register is spilled, and must be fetched.
 An "ACTIVE" status is given if the input/output register(s) was already present in liveList with a status of PHYS.
 A "MEM" status is given if the input/output register(s) was NOT yet present in liveList and needed to be added in.
+Ignore r0!!! Never mess with it. It should never be in the liveList. 
+
+This could probably be called "updateLiveListBU" or something given an op type and register(s) for that op.
+
+void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3);
+^Performs the operations for Part 1 separately from the rest of the bottom-up algorithm.
 
 Part 2: Spill the proper number of registers (if necessary) AND assign them in the same step.
 I) Get the sorted list of registers, by descending order of next instruction (priority at
@@ -79,7 +85,15 @@ Give it a status of PHYS and set its physId to the physId of the first input reg
 -1, return an error.
 VII) Convert any of the MEM_ACTIVE_INPUT's to PHYS at this point, for the next cycle.
 
-Part 3: output the operation given the virtual register ID's, converting them to physical register ID's! 
+Turn this into a function called spillFetchAssignBU().
+
+void spillFetchAssignBU(intNode liveList, regNode head, PHYS_STATUS *physStatuses, int &currOffsetPtr);
+
+
+Part 3: output the operation given the virtual register ID's, converting them to physical register ID's!
+Don't change any of the registers' properties during output since the previous two functions do that. 
+
+void outputBU(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant);
 
 The sequence of events goes as follows:
 
