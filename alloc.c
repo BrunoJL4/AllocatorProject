@@ -1053,7 +1053,31 @@ void updateNextInstr(int currInstr, regNode head) {
 }
 
 int nextComp(const void *in1, const void *in2) {
-
+	// cast the inputs to regNodes
+	regNode n1 = *((regNode *) in1);
+	regNode n2 = *((regNode *) in2);
+	int n1Next = n1->nextInstr;
+	int n2Next = n2->nextInstr;
+	// return 0 if the registers have the same next instruction (could also mean they're both dead)
+	if(n1Next == n2Next) {
+		return 0;
+	}
+	// return -1 if n1 is dead
+	else if(n1Next == -1) {
+		return -1;
+	}
+	// return 1 if n2 is dead
+	else if(n2Next == -1) {
+		return 1;
+	}
+	// return -1 if n1 comes later than n2
+	else if(n1Next > n2Next) {
+		return -1;
+	}
+	// return 1 if n2 comes later than n1
+	else{
+		return 1;
+	}
 }
 
 void bottomUp(int numRegisters, FILE *file) {
