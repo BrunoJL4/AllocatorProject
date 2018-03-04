@@ -19,6 +19,7 @@ to each allocator (when applicable).
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 /* Enum definitions below. */
 

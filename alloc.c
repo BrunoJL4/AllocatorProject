@@ -1552,6 +1552,8 @@ of registers. New file is output, line-by-line, to stdout.
 argv has, in order: the number of registers, the */
 
 int main(int argc, char *argv[]) {
+	struct timeval tv1, tv2;
+	gettimeofday(&tv1, NULL);
 	// First: gather information and initialize environment using the arguments.
 	// the number of registers requested by the user, passed in the first arg
 	int numRegs;
@@ -1590,7 +1592,10 @@ int main(int argc, char *argv[]) {
 		printf("Error in main()! Invalid allocator type input: %c\n", typeOp);
 		exit(EXIT_FAILURE);
 	}
-
+	gettimeofday(&tv2, NULL);
+	// output the time spent into a comment on the last line
+	fprintf(stdout, "// Total time = %f seconds\n",
+         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 	close(file);
 	return 1;
 
