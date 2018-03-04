@@ -30,7 +30,7 @@ echo "Creating report files for simple top-down allocation"
 
 # Test each of these in waves: original block, 5-reg, 10-reg, and 20-reg.
 echo "Performing test 1!"
-./ILOC_Simulator/sim -i 4000 0 10 20 30 40 50 60 70 80 90 < report1.i
+./ILOC_Simulator/sim -i 4000 0 10 20 30 40 50 60 70 80 90 < Report_Blocks/report1.i
 ./ILOC_Simulator/sim -i 4000 0 10 20 30 40 50 60 70 80 90 < test1-5.i
 ./ILOC_Simulator/sim -i 4000 0 10 20 30 40 50 60 70 80 90 < test1-10.i
 ./ILOC_Simulator/sim -i 4000 0 10 20 30 40 50 60 70 80 90 < test1-20.i
