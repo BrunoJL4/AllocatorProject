@@ -69,7 +69,7 @@ liveList with status "MEM_ACTIVE_INPUT" or "MEM_ACTIVE_OUTPUT". These need to be
 III) Make a "numToSpill" equal to what's mentioned above. Free up physical registers from the sorted
 list of registers (which are PHYS, but not PHYS_ACTIVE_INPUT!!!)
  by removing the regNodes from liveList, setting the regNodes to MEM, and setting the status of the physical register
-accordingly. We obviously need to call spillRegister() in this part as well.
+accordingly. We obviously need to call spillRegister() in this part as well, or do the output ourselves.
 If they have a default offset, assign them the current offset and then decrement it.
 Do so either until we run out of physical registers, or until we've spilled enough of them.
 Whichever comes first.

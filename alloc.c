@@ -33,7 +33,7 @@ regNode createRegNode(uint id) {
 	newNode->next = NULL;
 	newNode->firstInstr = -1;
 	newNode->lastInstr = -1;
-	newNode->nextUse = -1;
+	newNode->nextInstr = -1;
 	return newNode;
 }
 
@@ -453,7 +453,12 @@ void deleteIntNode(int target, intNode *headPtr) {
 
 void addIntNode(int val, intNode *intHeadPtr) {
 	intNode newNode = createIntNode(val);
-	// First case: if the regNode has no occurrences, change the pointer to reference a new head.
+	// if the node already exists, return without doing anything
+	if(intNodeExists(val, *intHeadPtr) == 1) {
+		free(newNode);
+		return;
+	}
+	// First case: if the intNode has no occurrences, change the pointer to reference a new head.
 	intNode currNode = *intHeadPtr;
 	if(currNode == NULL) {
 		*intHeadPtr = newNode;
@@ -1091,6 +1096,7 @@ void setActiveStatus(int reg, regNode head, REG_TYPE type) {
 		printf("Error in setActiveStatus for r%d: cannot find in the regNode list!\n", reg);
 		exit(EXIT_FAILURE);
 	}
+	// if the target already has its own physical register, indicate so
 	if(targetNode->status == PHYS) {
 		if(type == IN) {
 			targetNode->status = PHYS_ACTIVE_INPUT;
@@ -1099,33 +1105,40 @@ void setActiveStatus(int reg, regNode head, REG_TYPE type) {
 			targetNode->status = PHYS_ACTIVE_OUTPUT;
 		}
 	}
+	// otherwise, indicate that the target needs to be allocated a register
 	else{
 		if(type == IN) {
-			targetNode->status = MEM_ACTIVE_INPUT;
+			targetNode->status = REQ_ACTIVE_INPUT;
 		}
 		else{
-			targetNode->status = MEM_ACTIVE_OUTPUT;
+			targetNode->status = REQ_ACTIVE_OUTPUT;
 		}
 	}
 }
 
 void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
 	// perform the status assignments based off of the type of the operation
+	// also add the register into the liveList if it's not already present...
 	if(op == LOADI) {
-		int outRegId = opReg1;
-		setActiveStatus(outRegId, head, OUT);
+		int outReg = opReg1;
+		setActiveStatus(outReg, head, OUT);
+		addIntNode(outReg, &liveList);
 	}
 	else if(op == LOAD) {
 		int inReg = opReg1;
 		int outReg = opReg2;
 		setActiveStatus(inReg, head, IN);
 		setActiveStatus(outReg, head, OUT);
+		addIntNode(inReg, &liveList);
+		addIntNode(outReg, &liveList);
 	}
-	else if(op == ST0RE) {
+	else if(op == STORE) {
 		int inReg = opReg1;
 		int outReg = opReg2;
 		setActiveStatus(inReg, head, IN);
 		setActiveStatus(outReg, head, OUT);
+		addIntNode(inReg, &liveList);
+		addIntNode(outReg, &liveList);
 	}
 	else if(op == ADD || op == SUB || op == MULT || op == LSHIFT || op == RSHIFT) {
 		int inReg1 = opReg1;
@@ -1134,6 +1147,9 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 		setActiveStatus(inReg1, head, IN);
 		setActiveStatus(inReg2, head, IN);
 		setActiveStatus(outReg, head, OUT);
+		addIntNode(inReg1, &liveList);
+		addIntNode(inReg2, &liveList);
+		addIntNode(outReg, &liveList);
 	}
 	else if(op == OUTPUT) {
 		// do nothing, since we have no registers to worry about
@@ -1144,11 +1160,53 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 	}
 }
 
-void spillFetchAssignBU(intNode liveList, regNode head, regNode *sortedRegArr, PHYS_STATUS *physStatuses, int &currOffsetPtr) {
-
+void spillFetchAssignBottom(intNode liveList, regNode head, regNode *sortedRegArr, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr) {
+	// determine how many registers we'll need to spill
+	int numToSpill = 0;
+	int currInt = liveList;
+	while(currInt != NULL) {
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == REQ_ACTIVE_INPUT || currReg->status == REQ_ACTIVE_OUTPUT) {
+			numToSpill += 1;
+		}
+		currInt = currInt->next;
+	}
+	// iterate through sortedRegArr
+	int index;
+	for(i = 0; i < numRegisters; i++) {
+		regNode currReg = sortedRegArr[index];
+		// if the register in the list has a status of PHYS
+		if(currReg->status == PHYS) {
+			// it needs to give up the physical register in question. index 0 in sortedRegArr corresponds to r1.
+			// set the status in physStatuses to FREE.
+			int currPhys = currReg->physId;
+			sortedRegArr[currPhys - 1] = FREE;
+			// set the register's status to being in memory
+			currReg->status = MEM;
+			// if the register has the default offset, give it the current available offset and then decrement that.
+			if(currReg->offset == 9001) {
+				currReg->offset = *currOffsetPtr;
+				*currOffsetPtr -= 4;
+			}
+			// delink the corresponding intNode from liveList if applicable.
+			deleteIntNode(currReg->id, liveList);
+			// perform the spill output for the current register, now that the properties are set
+			// this will also change the physId to 999
+			spillReg(currReg->id, currReg->physId, head);
+			// decrement numToSpill since we've spilled one
+			numToSpill -= 1;
+		}
+		// if we've spilled everything we need to spill, break the loop
+		if(numToSpill == 0) {
+			break;
+		}
+	}
+	// now that we've freed either as many physical registers as we needed, or as we COULD,
+	// give the REQ_ACTIVE_INPUT registers first pick of them (if any)
+	
 }
 
-void outputBU(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
+void outputBottom(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
 
 }
 
