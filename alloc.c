@@ -1099,18 +1099,22 @@ void setActiveStatus(int reg, regNode head, REG_TYPE type) {
 	// if the target already has its own physical register, indicate so
 	if(targetNode->status == PHYS) {
 		if(type == IN) {
+			printf("\n\nsetting status for r%d to PHYS_ACTIVE_INPUT\n\n", reg);
 			targetNode->status = PHYS_ACTIVE_INPUT;
 		}
 		else{
+			printf("\n\nsetting status for r%d to PHYS_ACTIVE_OUTPUT\n\n", reg);
 			targetNode->status = PHYS_ACTIVE_OUTPUT;
 		}
 	}
 	// otherwise, indicate that the target needs to be allocated a register
 	else{
 		if(type == IN) {
+			printf("\n\nsetting status for r%d to REQ_ACTIVE_INPUT\n\n", reg);
 			targetNode->status = REQ_ACTIVE_INPUT;
 		}
 		else{
+			printf("\n\nsetting status for r%d to REQ_ACTIVE_OUTPUT\n\n", reg);
 			targetNode->status = REQ_ACTIVE_OUTPUT;
 		}
 	}
@@ -1165,7 +1169,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 	regNode *sortedRegs = sortedRegArr(head, BOTTOM);
 	// determine how many registers we'll need to spill
 	int numToSpill = 0;
-	int currInt = liveList;
+	intNode currInt = liveList;
 	while(currInt != NULL) {
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == REQ_ACTIVE_INPUT || currReg->status == REQ_ACTIVE_OUTPUT) {
@@ -1176,14 +1180,14 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 	// iterate through sortedRegs
 	int numVirtual = regNodeListLength(head);
 	int index;
-	for(index = 0; index < regNodeListLength; index++) {
+	for(index = 0; index < numVirtual; index++) {
 		regNode currReg = sortedRegs[index];
 		// if the register in the list has a status of PHYS
 		if(currReg->status == PHYS) {
 			// it needs to give up the physical register in question. index 0 in sortedRegs corresponds to r1.
 			// set the status in physStatuses to FREE.
 			int currPhys = currReg->physId;
-			sortedRegs[currPhys - 1] = FREE;
+			physStatuses[currPhys - 1] = FREE;
 			// set the register's status to being in memory
 			currReg->status = MEM;
 			// if the register has the default offset, give it the current available offset and then decrement that.
@@ -1192,7 +1196,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 				*currOffsetPtr -= 4;
 			}
 			// delink the corresponding intNode from liveList if applicable.
-			deleteIntNode(currReg->id, liveList);
+			deleteIntNode(currReg->id, &liveList);
 			// perform the spill output for the current register, now that the properties are set
 			// this will also change the physId to 999
 			spillReg(currReg->id, currReg->physId, head);
@@ -1216,15 +1220,15 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 			// iterate through physStatuses
 			for(index = 0; index < numRegisters; index++) {
 				// if we find a free physical register (physID corresponds to index + 1)
-				if(physStatuses[i] == FREE) {
+				if(physStatuses[index] == FREE) {
 					// set the register to being in use
-					physStatuses[i] = USED;
+					physStatuses[index] = USED;
 					// set the current register's status to PHYS
 					currReg->status = PHYS;
 					// set the current register's physId to index + 1 (index 0 corresponds to r1)
 					currReg->physId = index + 1;
 					// perform the fetching output for the register
-					fetchReg(currReg->id, index + 1, head)
+					fetchReg(currReg->id, index + 1, head);
 				}
 			}
 		}
@@ -1264,24 +1268,78 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == REQ_ACTIVE_OUTPUT) {
 			// if numToSpill == 1, then we have the special case where we only have two registers AND there are two inputs. 
-			// give it r1. this means that we also set whatever register currently has r1, to MEM, to be spilled after
-			// the current operation. 
+			// give the output r1. 
+			// this means that we need to find the register that has r1. if it has an offset, spill it to that. if it has the
+			// default offset, then give it an offset and spill that value into memory before the operation.
 			if(numToSpill == 1) {
-
+				regNode currRegInner = head;
+				// find the virtual register that's holding onto r1
+				while(currRegInner != NULL) {
+					if(currRegInner->physId == 1) {
+						// if it has the default offset, give it the current offset and decrement that.
+						if(currRegInner->offset == 9001) {
+							currRegInner->offset = *currOffsetPtr;
+							*currOffsetPtr -= 4;
+						}
+						// switch the r1-holding register's status to spilled
+						currRegInner->status = MEM;
+						// manually spill it, because we want it to keep r1
+						fprintf(stdout, "storeAI r1 => r0, %d\n", currRegInner->offset);
+					}
+				}
 			}
 			// if numToSpill <= 0, then we can just find the first available physical register and assign that.
 			else {
-
+				for(index = 0; index < numRegisters; index++) {
+					// when we find a free register
+					if(physStatuses[index] == FREE) {
+						// change its status to USED
+						physStatuses[index] = USED;
+						// give currReg a physId of index + 1
+						currReg->physId = index + 1;
+						// give currReg a status of PHYS
+						currReg->status = PHYS;
+					}
+				}
 			}
+			break;
 		}
 		currInt = currInt->next;
 	}
-	free(sortedRegArr);
+	free(sortedRegs);
 	return;
 }
 
-void outputBottom(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
-
+void outputBottom(regNode head, char *opString, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {
+	// tailor the output to the operation type
+	if(op == LOADI) {
+		regNode inReg = getRegNode(opReg1, head);
+		fprintf(stdout, "loadI %d => r%d\n", constant, inReg->physId);
+	}
+	else if(op == LOAD) {
+		regNode inReg = getRegNode(opReg1, head);
+		regNode outReg = getRegNode(opReg2, head);
+		fprintf(stdout, "load r%d => r%d\n", inReg->physId, outReg->physId);
+	}
+	else if(op == STORE) {
+		regNode inReg = getRegNode(opReg1, head);
+		regNode outReg = getRegNode(opReg2, head);
+		fprintf(stdout, "store r%d => r%d\n", inReg->physId, outReg->physId);
+	}
+	else if(op == ADD || op == SUB || op == MULT || op == LSHIFT || op == RSHIFT) {
+		regNode inReg1 = getRegNode(opReg1, head);
+		regNode inReg2 = getRegNode(opReg2, head);
+		regNode outReg = getRegNode(opReg3, head);
+		fprintf(stdout, "%s r%d, r%d => r%d\n", opString, inReg1->physId, inReg2->physId, outReg->physId);
+	}
+	else if(op == OUTPUT) {
+		fprintf(stdout, "output %d\n", constant);
+		return;
+	}
+	else{
+		printf("Error in updateLiveListBottom! Invalid operation type given: %d\n", op);
+	}
+	return;
 }
 
 void bottomUp(int numRegisters, FILE *file) {
@@ -1301,17 +1359,118 @@ void bottomUp(int numRegisters, FILE *file) {
 	int currOffset = -4;
 	// declare the list of live registers (intNodes store id's)
 	intNode liveList = NULL;
+	// keep track of the current instruction
+	int currInstr = 0;
 	// Getting started: let's go through the file and perform bottom-up allocation on each line.
 	ssize_t read = 0;
 	ssize_t len = 0;
 	char *currLine = NULL;
-	// Let's go to each non-blank line and fetch it. Then use opTD() to process
+	// Let's go to each non-blank line and fetch it. Then use outputBottom() to process
 	// the line and provide the according output.
 	while(read = getline(&currLine, &len, file) != -1) {
 		// Ignore a blank line or a comment.
 		if(strlen(currLine) != 1 && currLine[0] != '/') {
-			// perform the operation(s) for this line
-			
+			// obtain the operation type and/or register(s) and/or constant for this line.
+			// if(currInstr == 0), just skip the current line, as it's just loadI 1024 => r0.
+			if(currInstr != 0) {
+				// First, find the index of the initial non-blank character.
+				uint currIndex = 0;
+				uint firstIndex = 0;
+				char currChar = currLine[currIndex];
+				while(isblank(currChar)) {
+					currIndex += 1;
+					currChar = currLine[currIndex];
+				}
+				firstIndex = currIndex;
+				// Now find the index of the first blank character following it.
+				uint lastIndex = currIndex;
+				while(!isblank(currChar)) {
+					currIndex += 1;
+					currChar = currLine[currIndex];
+				}
+				lastIndex = currIndex;
+				// The length of the actual operation string will be 1 more than the
+				// difference between the two indexes. Copy the operation string
+				// over to a null-terminated stack buffer, to prepare for comparison.
+				uint opLength = lastIndex - firstIndex;
+				char opString[opLength + 1];
+				opString[opLength] = '\0';
+				strncpy(opString, &(currLine[firstIndex]), opLength);
+				// Any operation may have up to 3 registers involved (duplicates allowed),
+				// and one constant value. 
+				OP_TYPE op;
+				int opReg1 = -1;
+				int opReg2 = -1;
+				int opReg3 = -1;
+				int opConst = -1;
+				if(strcmp(opString, "loadI") == 0) {
+					// next value would be a constant.
+					opConst = nextNum(currLine, &currIndex);
+					// following that, a register.
+					opReg1 = nextNum(currLine, &currIndex);
+					op = LOADI;
+				}
+				else if(strcmp(opString, "load") == 0 || strcmp(opString, "store") == 0) {
+					// next value would be a register.
+					opReg1 = nextNum(currLine, &currIndex);
+					// following that, another register.
+					opReg2 = nextNum(currLine, &currIndex);
+					if(strcmp(opString, "load") == 0) {
+						op = LOAD;
+					}
+					else{
+						op = STORE;
+					}
+				}
+				else if(strcmp(opString, "add") == 0 || strcmp(opString, "sub") == 0 ||
+						strcmp(opString, "mult") == 0 || strcmp(opString, "lshift") == 0 ||
+						strcmp(opString, "rshift") == 0) {
+					// next value would be a register.
+					opReg1 = nextNum(currLine, &currIndex);
+					// following that, another register.
+					opReg2 = nextNum(currLine, &currIndex);
+					// finally, another register.
+					opReg3 = nextNum(currLine, &currIndex);
+					if(strcmp(opString, "add") == 0) {
+						op = ADD;
+					}
+					else if(strcmp(opString, "sub") == 0) {
+						op = SUB;
+					}
+					else if(strcmp(opString, "mult") == 0) {
+						op = MULT;
+					}
+					else if(strcmp(opString, "lshift") == 0) {
+						op = LSHIFT;
+					}
+					else{
+						op = RSHIFT;
+					}
+				}
+				else if(strcmp(opString, "output") == 0) {
+					// value would be a constant.
+					opConst = nextNum(currLine, &currIndex);
+					op = OUTPUT;
+				}
+				else{
+					printf("ERROR! No valid operation provided.\n");
+					exit(EXIT_FAILURE);
+				}
+				// with the operation type and inputs/output obtained, update the next instruction
+				// for all of the register nodes.
+				updateNextInstr(currInstr, head);
+				// then update the liveList with the current operands
+				updateLiveListBottom(liveList, head, op, opReg1, opReg2, opReg3);
+				// perform the spill (if any) operations and the fetch operations necessary to operate
+				spillFetchAssignBottom(liveList, head, numRegisters, physStatuses, &currOffset);
+				// perform the output operations for this line
+				outputBottom(head, opString, op, opReg1, opReg2, opReg3, opConst);
+			}
+			else{
+				fprintf(stdout, "loadI 1024 => r0\n");
+			}
+			// increment the current instruction
+			currInstr += 1;
 		}
 		// free the current line's memory, and set the pointer to null
 		free(currLine);
@@ -1367,8 +1526,7 @@ int main(int argc, char *argv[]) {
 		topDownLive(numRegs, file);
 	}
 	else if(typeOp == 'b') {
-		printf("Requested bottom-down allocator. Not currently implemented.\n");
-		return 0;
+		bottomUp(numRegs, file);
 	}
 	else {
 		printf("Error in main()! Invalid allocator type input: %c\n", typeOp);
@@ -1376,7 +1534,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	close(file);
-
 	return 1;
 
 

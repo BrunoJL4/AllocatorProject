@@ -182,7 +182,7 @@ regNode getRegNode(uint id, regNode head);
 /* Performs the spill code given a virtual register ID, the feasible register ID
 that its value is stored in, and the head of the regNode list. Also changes the
 register's status and location members accordingly. */
-void spillReg(uint targetId, uint feasId, regNode head);
+void spillReg(uint targetId, uint physId, regNode head);
 
 /* Performs the fetching spill code given a virtual register ID, the feasible register ID
 that its value will be stored in, and the head of the regNode list. Also changes the
@@ -290,7 +290,7 @@ the properties of the registers and providing the stdout output for fetch/spill 
 void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr);
 
 /* Performs the actual operational output for a given line, without changing the properties of the registers involved. */
-void outputBottom(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant);
+void outputBottom(regNode head, char *opString, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant);
 
 /* Performs bottom-up allocation given the number of registers from the user, and the
 file pointer from their file. Output is given to stdout. */
