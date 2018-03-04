@@ -1091,58 +1091,72 @@ int nextComp(const void *in1, const void *in2) {
 
 void setActiveStatus(int reg, regNode head, REG_TYPE type) {
 	regNode targetNode = getRegNode(reg, head);
+	// if the register is r0, return
+	if(reg == 0) {
+		return;
+	}
 	// exit on failure on error
 	if(targetNode == NULL) {
-		printf("Error in setActiveStatus for r%d: cannot find in the regNode list!\n", reg);
+//		printf("Error in setActiveStatus for r%d: cannot find in the regNode list!\n", reg);
 		exit(EXIT_FAILURE);
 	}
 	// if the target already has its own physical register, indicate so
 	if(targetNode->status == PHYS) {
 		if(type == IN) {
-			printf("\n\nsetting status for r%d to PHYS_ACTIVE_INPUT\n\n", reg);
+//			printf("\n\nsetting status for r%d to PHYS_ACTIVE_INPUT\n\n", reg);
 			targetNode->status = PHYS_ACTIVE_INPUT;
 		}
 		else{
-			printf("\n\nsetting status for r%d to PHYS_ACTIVE_OUTPUT\n\n", reg);
+//			printf("\n\nsetting status for r%d to PHYS_ACTIVE_OUTPUT\n\n", reg);
 			targetNode->status = PHYS_ACTIVE_OUTPUT;
 		}
 	}
 	// otherwise, indicate that the target needs to be allocated a register
 	else{
 		if(type == IN) {
-			printf("\n\nsetting status for r%d to REQ_ACTIVE_INPUT\n\n", reg);
+//			printf("\n\nsetting status for r%d to REQ_ACTIVE_INPUT\n\n", reg);
 			targetNode->status = REQ_ACTIVE_INPUT;
 		}
 		else{
-			printf("\n\nsetting status for r%d to REQ_ACTIVE_OUTPUT\n\n", reg);
+//			printf("\n\nsetting status for r%d to REQ_ACTIVE_OUTPUT\n\n", reg);
 			targetNode->status = REQ_ACTIVE_OUTPUT;
 		}
 	}
 }
 
-void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
+void updateLiveListBottom(intNode *liveListPtr, regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3) {
 	// perform the status assignments based off of the type of the operation
 	// also add the register into the liveList if it's not already present...
 	if(op == LOADI) {
 		int outReg = opReg1;
 		setActiveStatus(outReg, head, OUT);
-		addIntNode(outReg, &liveList);
+		if(outReg != 0) {
+			addIntNode(outReg, liveListPtr);
+		}
 	}
 	else if(op == LOAD) {
 		int inReg = opReg1;
 		int outReg = opReg2;
 		setActiveStatus(inReg, head, IN);
 		setActiveStatus(outReg, head, OUT);
-		addIntNode(inReg, &liveList);
-		addIntNode(outReg, &liveList);
+		if(inReg != 0) {
+			addIntNode(inReg, liveListPtr);
+		}
+		if(outReg != 0) {
+			addIntNode(outReg, liveListPtr);
+		}
 	}
 	else if(op == STORE) {
 		int inReg = opReg1;
 		int outReg = opReg2;
 		setActiveStatus(inReg, head, IN);
 		setActiveStatus(outReg, head, OUT);
-		addIntNode(inReg, &liveList);
-		addIntNode(outReg, &liveList);
+		if(inReg != 0) {
+			addIntNode(inReg, liveListPtr);
+		}
+		if(outReg != 0) {
+			addIntNode(outReg, liveListPtr);
+		}
 	}
 	else if(op == ADD || op == SUB || op == MULT || op == LSHIFT || op == RSHIFT) {
 		int inReg1 = opReg1;
@@ -1151,9 +1165,15 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 		setActiveStatus(inReg1, head, IN);
 		setActiveStatus(inReg2, head, IN);
 		setActiveStatus(outReg, head, OUT);
-		addIntNode(inReg1, &liveList);
-		addIntNode(inReg2, &liveList);
-		addIntNode(outReg, &liveList);
+		if(inReg1 != 0) {
+			addIntNode(inReg1, liveListPtr);
+		}
+		if(inReg2 != 0) {
+			addIntNode(inReg2, liveListPtr);
+		}
+		if(outReg != 0) {
+			addIntNode(outReg, liveListPtr);
+		}
 	}
 	else if(op == OUTPUT) {
 		// do nothing, since we have no registers to worry about
@@ -1164,12 +1184,12 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 	}
 }
 
-void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr) {
+void spillFetchAssignBottom(intNode *liveListPtr, regNode head, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr) {
 	// obtain the sortedRegArr for this round (changes dynamically with each round)
 	regNode *sortedRegs = sortedRegArr(head, BOTTOM);
-	// determine how many registers we'll need to spill
+	// determine how many registers we'll need to spill... start off by assuming we don't have any available
 	int numToSpill = 0;
-	intNode currInt = liveList;
+	intNode currInt = *liveListPtr;
 	while(currInt != NULL) {
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == REQ_ACTIVE_INPUT || currReg->status == REQ_ACTIVE_OUTPUT) {
@@ -1177,10 +1197,23 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 		}
 		currInt = currInt->next;
 	}
+	// iterate through physStatuses and determine how many we actually need to spill. 
+	int index;
+	for(index = 0; index < numRegisters; index ++) {
+		if(numToSpill == 0) {
+			break;
+		}
+		if(physStatuses[index] == FREE) {
+			numToSpill -= 1;
+		}
+	}
 	// iterate through sortedRegs
 	int numVirtual = regNodeListLength(head);
-	int index;
 	for(index = 0; index < numVirtual; index++) {
+		// if we've spilled everything we need to spill, break the loop
+		if(numToSpill <= 0) {
+			break;
+		}
 		regNode currReg = sortedRegs[index];
 		// if the register in the list has a status of PHYS
 		if(currReg->status == PHYS) {
@@ -1196,22 +1229,18 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 				*currOffsetPtr -= 4;
 			}
 			// delink the corresponding intNode from liveList if applicable.
-			deleteIntNode(currReg->id, &liveList);
+			deleteIntNode(currReg->id, liveListPtr);
 			// perform the spill output for the current register, now that the properties are set
 			// this will also change the physId to 999
 			spillReg(currReg->id, currReg->physId, head);
 			// decrement numToSpill since we've spilled one
 			numToSpill -= 1;
 		}
-		// if we've spilled everything we need to spill, break the loop
-		if(numToSpill <= 0) {
-			break;
-		}
 	}
 	// now that we've freed either as many physical registers as we needed, or as we COULD,
 	// give the REQ_ACTIVE_INPUT registers first pick of them (if any)
 	// iterate through liveList
-	currInt = liveList;
+	currInt = *liveListPtr;
 	while(currInt != NULL) {
 		// if we find a node with a REQ_ACTIVE_INPUT status, assign it the first available
 		// physical register
@@ -1227,8 +1256,36 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 					currReg->status = PHYS;
 					// set the current register's physId to index + 1 (index 0 corresponds to r1)
 					currReg->physId = index + 1;
-					// perform the fetching output for the register
-					fetchReg(currReg->id, index + 1, head);
+					// perform the fetching output for the register, if it is currently stored in memory
+					if(currReg->offset != 9001) {
+						fetchReg(currReg->id, index + 1, head);
+					}
+					break;
+				}
+			}
+		}
+		currInt = currInt->next;
+	}
+	// now we give the output register the next pick of what remains.
+	currInt = *liveListPtr;
+	while(currInt != NULL) {
+		// if we find a node with REQ_ACTIVE_OUTPUT status, assign it the first available physical register
+		// and set numToSpill to 0.
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == REQ_ACTIVE_OUTPUT) {
+			for(index = 0; index < numRegisters; index++) {
+				if(physStatuses[index] == FREE) {
+					physStatuses[index] = USED;
+					// set the current register's status to PHYS
+					currReg->status = PHYS;
+					// set the current register's physId to index + 1
+					currReg->physId = index + 1;
+					// if the register isn't currently stored in the default offset (hasn't been spilled),
+					// fetch it
+					if(currReg->offset != 9001) {
+						fetchReg(currReg->id, index + 1, head);
+					}
+					break;
 				}
 			}
 		}
@@ -1242,7 +1299,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 		exit(EXIT_FAILURE);
 	}
 	// convert any of the PHYS_ACTIVE_INPUT registers to PHYS, as they're now safe from spilling
-	currInt = liveList;
+	currInt = *liveListPtr;
 	while(currInt != NULL) {
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == PHYS_ACTIVE_INPUT) {
@@ -1251,7 +1308,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 		currInt = currInt->next;
 	}
 	// if we have a PHYS_ACTIVE_OUTPUT register, then we convert that to PHYS and return
-	currInt = liveList;
+	currInt = *liveListPtr;
 	while(currInt != NULL) {
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == PHYS_ACTIVE_OUTPUT) {
@@ -1263,7 +1320,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 	// if we didn't have a PHYS_ACTIVE_OUTPUT, then that must mean we had a REQ_ACTIVE_OUTPUT
 	// or no output at all.
 	// look for a REQ_ACTIVE_OUTPUT.
-	currInt = liveList;
+	currInt = *liveListPtr;
 	while(currInt != NULL) {
 		regNode currReg = getRegNode(currInt->val, head);
 		if(currReg->status == REQ_ACTIVE_OUTPUT) {
@@ -1286,6 +1343,7 @@ void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PH
 						// manually spill it, because we want it to keep r1
 						fprintf(stdout, "storeAI r1 => r0, %d\n", currRegInner->offset);
 					}
+					currRegInner = currRegInner->next;
 				}
 			}
 			// if numToSpill <= 0, then we can just find the first available physical register and assign that.
@@ -1460,9 +1518,9 @@ void bottomUp(int numRegisters, FILE *file) {
 				// for all of the register nodes.
 				updateNextInstr(currInstr, head);
 				// then update the liveList with the current operands
-				updateLiveListBottom(liveList, head, op, opReg1, opReg2, opReg3);
+				updateLiveListBottom(&liveList, head, op, opReg1, opReg2, opReg3);
 				// perform the spill (if any) operations and the fetch operations necessary to operate
-				spillFetchAssignBottom(liveList, head, numRegisters, physStatuses, &currOffset);
+				spillFetchAssignBottom(&liveList, head, numRegisters, physStatuses, &currOffset);
 				// perform the output operations for this line
 				outputBottom(head, opString, op, opReg1, opReg2, opReg3, opConst);
 			}
