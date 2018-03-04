@@ -1160,7 +1160,9 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 	}
 }
 
-void spillFetchAssignBottom(intNode liveList, regNode head, regNode *sortedRegArr, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr) {
+void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr) {
+	// obtain the sortedRegArr for this round (changes dynamically with each round)
+	regNode *sortedRegs = sortedRegArr(head, BOTTOM);
 	// determine how many registers we'll need to spill
 	int numToSpill = 0;
 	int currInt = liveList;
@@ -1171,16 +1173,17 @@ void spillFetchAssignBottom(intNode liveList, regNode head, regNode *sortedRegAr
 		}
 		currInt = currInt->next;
 	}
-	// iterate through sortedRegArr
+	// iterate through sortedRegs
+	int numVirtual = regNodeListLength(head);
 	int index;
-	for(i = 0; i < numRegisters; i++) {
-		regNode currReg = sortedRegArr[index];
+	for(index = 0; index < regNodeListLength; index++) {
+		regNode currReg = sortedRegs[index];
 		// if the register in the list has a status of PHYS
 		if(currReg->status == PHYS) {
-			// it needs to give up the physical register in question. index 0 in sortedRegArr corresponds to r1.
+			// it needs to give up the physical register in question. index 0 in sortedRegs corresponds to r1.
 			// set the status in physStatuses to FREE.
 			int currPhys = currReg->physId;
-			sortedRegArr[currPhys - 1] = FREE;
+			sortedRegs[currPhys - 1] = FREE;
 			// set the register's status to being in memory
 			currReg->status = MEM;
 			// if the register has the default offset, give it the current available offset and then decrement that.
@@ -1197,13 +1200,84 @@ void spillFetchAssignBottom(intNode liveList, regNode head, regNode *sortedRegAr
 			numToSpill -= 1;
 		}
 		// if we've spilled everything we need to spill, break the loop
-		if(numToSpill == 0) {
+		if(numToSpill <= 0) {
 			break;
 		}
 	}
 	// now that we've freed either as many physical registers as we needed, or as we COULD,
 	// give the REQ_ACTIVE_INPUT registers first pick of them (if any)
-	
+	// iterate through liveList
+	currInt = liveList;
+	while(currInt != NULL) {
+		// if we find a node with a REQ_ACTIVE_INPUT status, assign it the first available
+		// physical register
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == REQ_ACTIVE_INPUT) {
+			// iterate through physStatuses
+			for(index = 0; index < numRegisters; index++) {
+				// if we find a free physical register (physID corresponds to index + 1)
+				if(physStatuses[i] == FREE) {
+					// set the register to being in use
+					physStatuses[i] = USED;
+					// set the current register's status to PHYS
+					currReg->status = PHYS;
+					// set the current register's physId to index + 1 (index 0 corresponds to r1)
+					currReg->physId = index + 1;
+					// perform the fetching output for the register
+					fetchReg(currReg->id, index + 1, head)
+				}
+			}
+		}
+		currInt = currInt->next;
+	}
+	// The input registers, if any, have been allocated registers. Now for the output.
+	// if numToSpill > 1, then return an error (we should deterministically have at most one un-spillable register, if we
+	// only have two allocatable/physical registers)
+	if(numToSpill > 1) {
+		printf("ERROR in spillFetchAssignBottom! numToSpill is: %d, which is > 1!\n", numToSpill);
+		exit(EXIT_FAILURE);
+	}
+	// convert any of the PHYS_ACTIVE_INPUT registers to PHYS, as they're now safe from spilling
+	currInt = liveList;
+	while(currInt != NULL) {
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == PHYS_ACTIVE_INPUT) {
+			currReg->status = PHYS;
+		}
+		currInt = currInt->next;
+	}
+	// if we have a PHYS_ACTIVE_OUTPUT register, then we convert that to PHYS and return
+	currInt = liveList;
+	while(currInt != NULL) {
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == PHYS_ACTIVE_OUTPUT) {
+			currReg->status = PHYS;
+			return;
+		}
+		currInt = currInt->next;
+	}
+	// if we didn't have a PHYS_ACTIVE_OUTPUT, then that must mean we had a REQ_ACTIVE_OUTPUT
+	// or no output at all.
+	// look for a REQ_ACTIVE_OUTPUT.
+	currInt = liveList;
+	while(currInt != NULL) {
+		regNode currReg = getRegNode(currInt->val, head);
+		if(currReg->status == REQ_ACTIVE_OUTPUT) {
+			// if numToSpill == 1, then we have the special case where we only have two registers AND there are two inputs. 
+			// give it r1. this means that we also set whatever register currently has r1, to MEM, to be spilled after
+			// the current operation. 
+			if(numToSpill == 1) {
+
+			}
+			// if numToSpill <= 0, then we can just find the first available physical register and assign that.
+			else {
+
+			}
+		}
+		currInt = currInt->next;
+	}
+	free(sortedRegArr);
+	return;
 }
 
 void outputBottom(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant) {

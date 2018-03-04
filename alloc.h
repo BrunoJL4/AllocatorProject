@@ -287,7 +287,7 @@ void updateLiveListBottom(intNode liveList, regNode head, OP_TYPE op, int opReg1
 
 /* Spills and fetches registers as necessary for the current operation, using the next-occurrence format. This includes changing
 the properties of the registers and providing the stdout output for fetch/spill operations.*/
-void spillFetchAssignBottom(intNode liveList, regNode head, regNode *sortedRegArr, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr);
+void spillFetchAssignBottom(intNode liveList, regNode head, int numRegisters, PHYS_STATUS *physStatuses, int *currOffsetPtr);
 
 /* Performs the actual operational output for a given line, without changing the properties of the registers involved. */
 void outputBottom(regNode head, OP_TYPE op, int opReg1, int opReg2, int opReg3, int constant);
